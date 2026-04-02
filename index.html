@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Darsh-Task Board</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Syne', 'sans-serif'],
+            mono: ['DM Mono', 'monospace'],
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #f5f3ee;
+      background-image:
+        radial-gradient(circle at 20% 20%, #e8e2d9 0%, transparent 60%),
+        radial-gradient(circle at 80% 80%, #ddd5c8 0%, transparent 60%);
+      min-height: 100vh;
+    }
+
+    .card-enter {
+      animation: slideIn 0.2s ease-out;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .task-card {
+      transition: box-shadow 0.15s ease, transform 0.15s ease;
+    }
+
+    .task-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.09);
+    }
+
+    .col-todo       { border-top: 3px solid #3b82f6; }
+    .col-inprogress { border-top: 3px solid #f59e0b; }
+    .col-done       { border-top: 3px solid #10b981; }
+
+    .badge-todo       { background: #dbeafe; color: #1d4ed8; }
+    .badge-inprogress { background: #fef3c7; color: #b45309; }
+    .badge-done       { background: #d1fae5; color: #065f46; }
+
+    input[type="text"]:focus,
+    input[type="date"]:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px #3b82f6;
+    }
+
+    button:focus-visible {
+      outline: 2px solid #3b82f6;
+      outline-offset: 2px;
+    }
+
+    input[type="date"] {
+      color-scheme: light;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const STATUSES = ['todo', 'inprogress', 'done'];
+    const COLUMN_META = {
+      todo:       { label: 'To Do',       colClass: 'col-todo',       badgeClass: 'badge-todo' },
+      inprogress: { label: 'In Progress', colClass: 'col-inprogress', badgeClass: 'badge-inprogress' },
+      done:       { label: 'Done',        colClass: 'col-done',       badgeClass: 'badge-done' },
+    };
+
+    const PRIORITIES = ['low', 'medium', 'high'];
+    const PRIORITY_META = {
+      low:    { label: 'Low',    badgeClass: 'bg-stone-100 text-stone-500' },
+      medium: { label: 'Medium', badgeClass: 'bg-blue-100 text-blue-700' },
+      high:   { label: 'High',   badgeClass: 'bg-red-100 text-red-600' },
+    };
+
+    // Split ISO string manually to avoid timezone-shift bugs with new Date(iso)
+    function formatDate(iso) {
+      if (!iso) return null;
+      const [y, m, d] = iso.split('-').map(Number);
+      return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    function isOverdue(iso) {
+      if (!iso) return false;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const [y, m, d] = iso.split('-').map(Number);
+      return new Date(y, m - 1, d) < today;
+    }
+
+    /* ── TaskCard ─────────────────────────────────────── */
+    function TaskCard({ task, onMove, onDelete, onEdit }) {
+      const idx = STATUSES.indexOf(task.status);
+      const formattedDate = formatDate(task.dueDate);
+      const overdue = isOverdue(task.dueDate);
+
+      const [editing, setEditing] = React.useState(false);
+      const [draft, setDraft] = React.useState('');
+      const inputRef = React.useRef(null);
+
+      function startEdit() {
+        setDraft(task.title);
+        setEditing(true);
+        setTimeout(() => inputRef.current && inputRef.current.focus(), 0);
+      }
+
+      function saveEdit() {
+        onEdit(task.id, draft);
+        if (draft.trim()) setEditing(false);
+      }
+
+      function handleKeyDown(e) {
+        if (e.key === 'Enter') saveEdit();
+        if (e.key === 'Escape') setEditing(false);
+      }
+
+      return (
+        <div className="task-card card-enter bg-white rounded-xl px-4 py-3 shadow-sm border border-stone-100">
+          <div className="flex items-start gap-3">
+            {editing ? (
+              <input
+                ref={inputRef}
+                type="text"
+                value={draft}
+                onChange={e => setDraft(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="flex-1 font-mono text-sm bg-stone-50 border border-stone-200 rounded-lg px-2 py-0.5 text-stone-700 min-w-0"
+              />
+            ) : (
+              <p className="flex-1 font-mono text-sm text-stone-700 leading-snug pt-0.5 break-words min-w-0">
+                {task.title}
+              </p>
+            )}
+            <span className={`font-mono text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 mt-0.5 ${PRIORITY_META[task.priority].badgeClass}`}>
+              {PRIORITY_META[task.priority].label}
+            </span>
+            <div className="flex items-center gap-1 shrink-0">
+              {editing ? (
+                <button
+                  onClick={saveEdit}
+                  title="Save"
+                  className="font-mono text-[11px] font-medium px-2 py-1 rounded-lg bg-stone-900 text-white hover:bg-stone-700 transition-colors"
+                >Save</button>
+              ) : (
+                <>
+                  <button
+                    onClick={startEdit}
+                    title="Edit task"
+                    className="w-7 h-7 flex items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M8.5 1.5a1.414 1.414 0 0 1 2 2L3.5 10.5 1 11l.5-2.5 7-7z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => onMove(task.id, 'left')}
+                    disabled={idx === 0}
+                    title="Move left"
+                    className="w-7 h-7 flex items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-600 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                  >←</button>
+                  <button
+                    onClick={() => onMove(task.id, 'right')}
+                    disabled={idx === STATUSES.length - 1}
+                    title="Move right"
+                    className="w-7 h-7 flex items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-600 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                  >→</button>
+                  <button
+                    onClick={() => onDelete(task.id)}
+                    title="Delete task"
+                    className="w-7 h-7 flex items-center justify-center rounded-lg text-stone-300 hover:bg-red-50 hover:text-red-400 transition-colors ml-0.5"
+                  >×</button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {formattedDate && (
+            <div className={`flex items-center gap-1 mt-1.5 font-mono text-[11px] ${overdue ? 'text-red-500' : 'text-stone-400'}`}>
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                <rect x="1" y="2" width="10" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+                <line x1="4" y1="1" x2="4" y2="3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                <line x1="8" y1="1" x2="8" y2="3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                <line x1="1" y1="5" x2="11" y2="5" stroke="currentColor" strokeWidth="1"/>
+              </svg>
+              {formattedDate}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    /* ── Column ───────────────────────────────────────── */
+    function Column({ status, tasks, onMove, onDelete, onEdit }) {
+      const { label, colClass, badgeClass } = COLUMN_META[status];
+      return (
+        <div className={`flex flex-col bg-stone-50 rounded-2xl shadow-sm border border-stone-200 ${colClass} overflow-hidden`}>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
+            <h2 className="font-display font-700 text-stone-800 text-base tracking-tight">{label}</h2>
+            <span className={`font-mono text-xs font-medium px-2.5 py-0.5 rounded-full ${badgeClass}`}>
+              {tasks.length}
+            </span>
+          </div>
+          <div className="flex flex-col gap-2.5 p-4 flex-1 min-h-32">
+            {tasks.length === 0 && (
+              <p className="text-xs font-mono text-stone-300 text-center mt-6">empty</p>
+            )}
+            {tasks.map(task => (
+              <TaskCard key={task.id} task={task} onMove={onMove} onDelete={onDelete} onEdit={onEdit} />
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    /* ── ErrorBanner ──────────────────────────────────── */
+    function ErrorBanner({ message, onClose }) {
+      if (!message) return null;
+      return (
+        <div className="flex items-center justify-between bg-red-600 text-white font-mono text-sm px-5 py-3 rounded-xl mb-6 shadow-sm">
+          <span>{message}</span>
+          <button
+            onClick={onClose}
+            className="ml-4 w-6 h-6 flex items-center justify-center rounded-md hover:bg-red-500 transition-colors text-white text-base leading-none"
+            title="Dismiss"
+          >×</button>
+        </div>
+      );
+    }
+
+    /* ── TaskBoard ────────────────────────────────────── */
+    function TaskBoard() {
+      const [tasks, setTasks] = React.useState(() => {
+        try {
+          const stored = localStorage.getItem('taskboard_v2');
+          return stored ? JSON.parse(stored) : [
+            { id: 1, title: 'Design wireframes',   status: 'todo',       priority: 'high',   dueDate: '2026-04-10' },
+            { id: 2, title: 'Set up project repo', status: 'inprogress', priority: 'medium', dueDate: '2026-04-05' },
+            { id: 3, title: 'Write project brief', status: 'done',       priority: 'low',    dueDate: '' },
+          ];
+        } catch {
+          return [
+            { id: 1, title: 'Design wireframes',   status: 'todo',       priority: 'high',   dueDate: '2026-04-10' },
+            { id: 2, title: 'Set up project repo', status: 'inprogress', priority: 'medium', dueDate: '2026-04-05' },
+            { id: 3, title: 'Write project brief', status: 'done',       priority: 'low',    dueDate: '' },
+          ];
+        }
+      });
+
+      const [input, setInput] = React.useState('');
+      const [priority, setPriority] = React.useState('medium');
+      const [dueDate, setDueDate] = React.useState('');
+      const [error, setError] = React.useState('');
+      const errorTimerRef = React.useRef(null);
+
+      function showError(msg) {
+        setError(msg);
+        clearTimeout(errorTimerRef.current);
+        errorTimerRef.current = setTimeout(() => setError(''), 3000);
+      }
+
+      function dismissError() {
+        clearTimeout(errorTimerRef.current);
+        setError('');
+      }
+
+      React.useEffect(() => {
+        localStorage.setItem('taskboard_v2', JSON.stringify(tasks));
+      }, [tasks]);
+
+      function addTask(e) {
+        e.preventDefault();
+        const title = input.trim();
+        if (!title) { showError('Title cannot be empty.'); return; }
+        setTasks(prev => [{ id: Date.now(), title, status: 'todo', priority, dueDate }, ...prev]);
+        setInput('');
+        setPriority('medium');
+        setDueDate('');
+      }
+
+      function moveTask(id, direction) {
+        setTasks(prev => prev.map(t => {
+          if (t.id !== id) return t;
+          const idx = STATUSES.indexOf(t.status);
+          const next = direction === 'left' ? idx - 1 : idx + 1;
+          if (next < 0 || next >= STATUSES.length) return t;
+          return { ...t, status: STATUSES[next] };
+        }));
+      }
+
+      function deleteTask(id) {
+        setTasks(prev => prev.filter(t => t.id !== id));
+      }
+
+      function editTask(id, newTitle) {
+        const title = newTitle.trim();
+        if (!title) { showError('Title cannot be empty.'); return; }
+        setTasks(prev => prev.map(t => t.id === id ? { ...t, title } : t));
+      }
+
+      const byStatus = status => tasks.filter(t => t.status === status);
+
+      return (
+        <div className="min-h-screen px-6 py-10 max-w-6xl mx-auto">
+
+          <ErrorBanner message={error} onClose={dismissError} />
+
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="font-display text-3xl font-800 text-stone-900 tracking-tight mb-1">
+              Task Board
+            </h1>
+            <p className="font-mono text-xs text-stone-400">{tasks.length} task{tasks.length !== 1 ? 's' : ''} total</p>
+          </div>
+
+          {/* Add Task Form */}
+          <form onSubmit={addTask} className="flex gap-3 mb-10 flex-wrap">
+            <input
+              type="text"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              placeholder="New task title…"
+              className="flex-1 font-mono text-sm bg-white border border-stone-200 rounded-xl px-4 py-3 text-stone-800 placeholder-stone-300 shadow-sm transition-shadow min-w-40"
+            />
+            <select
+              value={priority}
+              onChange={e => setPriority(e.target.value)}
+              className="font-mono text-sm bg-white border border-stone-200 rounded-xl px-3 py-3 text-stone-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"
+            >
+              {PRIORITIES.map(p => (
+                <option key={p} value={p}>{PRIORITY_META[p].label}</option>
+              ))}
+            </select>
+
+            <input
+              type="date"
+              value={dueDate}
+              onChange={e => setDueDate(e.target.value)}
+              title="Due date (optional)"
+              className="font-mono text-sm bg-white border border-stone-200 rounded-xl px-3 py-3 text-stone-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"
+            />
+
+            <button
+              type="submit"
+              className="font-display font-600 text-sm bg-stone-900 text-white px-6 py-3 rounded-xl hover:bg-stone-700 active:scale-95 transition-all shadow-sm"
+            >
+              Add
+            </button>
+          </form>
+
+          {/* Columns */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {STATUSES.map(status => (
+              <Column
+                key={status}
+                status={status}
+                tasks={byStatus(status)}
+                onMove={moveTask}
+                onDelete={deleteTask}
+                onEdit={editTask}
+              />
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<TaskBoard />);
+  </script>
+</body>
+</html>
