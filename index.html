@@ -167,8 +167,8 @@
                 {task.title}
               </p>
             )}
-            <span className={`font-mono text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 mt-0.5 ${PRIORITY_META[task.priority].badgeClass}`}>
-              {PRIORITY_META[task.priority].label}
+            <span className={`font-mono text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 mt-0.5 ${(PRIORITY_META[task.priority] || PRIORITY_META['medium']).badgeClass}`}>
+              {(PRIORITY_META[task.priority] || PRIORITY_META['medium']).label}
             </span>
             <div className="flex items-center gap-1 shrink-0">
               {editing ? (
