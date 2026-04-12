@@ -8,6 +8,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
   <script>
     tailwind.config = {
@@ -76,6 +77,25 @@
   <div id="root"></div>
 
   <script type="text/babel">
+    /* ── Supabase client ──────────────────────────────── */
+    const { createClient } = supabase;
+    const sb = createClient(
+      'https://uqbvpytbqvlubuekgcbz.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxYnZweXRicXZsdWJ1ZWtnY2J6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDgwMzcsImV4cCI6MjA5MTAyNDAzN30._SvaS0J-geH725suru-0Gd0S53QuJ1Rd2Sevtg5Bg1E'
+    );
+
+    /* ── DB row → app task ───────────────────────────── */
+    // DB uses due_date; app uses dueDate. Normalise here.
+    function rowToTask(row) {
+      return {
+        id:       row.id,
+        title:    row.title,
+        status:   row.status,
+        priority: row.priority,
+        dueDate:  row.due_date || '',
+      };
+    }
+
     const STATUSES = ['todo', 'inprogress', 'done'];
     const COLUMN_META = {
       todo:       { label: 'To Do',       colClass: 'col-todo',       badgeClass: 'badge-todo' },
@@ -90,7 +110,6 @@
       high:   { label: 'High',   badgeClass: 'bg-red-100 text-red-600' },
     };
 
-    // Split ISO string manually to avoid timezone-shift bugs with new Date(iso)
     function formatDate(iso) {
       if (!iso) return null;
       const [y, m, d] = iso.split('-').map(Number);
@@ -246,23 +265,8 @@
 
     /* ── TaskBoard ────────────────────────────────────── */
     function TaskBoard() {
-      const [tasks, setTasks] = React.useState(() => {
-        try {
-          const stored = localStorage.getItem('taskboard_v2');
-          return stored ? JSON.parse(stored) : [
-            { id: 1, title: 'Design wireframes',   status: 'todo',       priority: 'high',   dueDate: '2026-04-10' },
-            { id: 2, title: 'Set up project repo', status: 'inprogress', priority: 'medium', dueDate: '2026-04-05' },
-            { id: 3, title: 'Write project brief', status: 'done',       priority: 'low',    dueDate: '' },
-          ];
-        } catch {
-          return [
-            { id: 1, title: 'Design wireframes',   status: 'todo',       priority: 'high',   dueDate: '2026-04-10' },
-            { id: 2, title: 'Set up project repo', status: 'inprogress', priority: 'medium', dueDate: '2026-04-05' },
-            { id: 3, title: 'Write project brief', status: 'done',       priority: 'low',    dueDate: '' },
-          ];
-        }
-      });
-
+      const [tasks, setTasks] = React.useState([]);
+      const [loading, setLoading] = React.useState(true);
       const [input, setInput] = React.useState('');
       const [priority, setPriority] = React.useState('medium');
       const [dueDate, setDueDate] = React.useState('');
@@ -280,38 +284,105 @@
         setError('');
       }
 
+      /* ── Load tasks on mount ── */
       React.useEffect(() => {
-        localStorage.setItem('taskboard_v2', JSON.stringify(tasks));
-      }, [tasks]);
+        async function fetchTasks() {
+          const { data, error } = await sb
+            .from('tasks')
+            .select('*')
+            .order('created_at', { ascending: false });
 
-      function addTask(e) {
+          if (error) {
+            showError('Failed to load tasks: ' + error.message);
+          } else {
+            setTasks(data.map(rowToTask));
+          }
+          setLoading(false);
+        }
+        fetchTasks();
+      }, []);
+
+      /* ── addTask: insert row, append to local state ── */
+      async function addTask(e) {
         e.preventDefault();
         const title = input.trim();
         if (!title) { showError('Title cannot be empty.'); return; }
-        setTasks(prev => [{ id: Date.now(), title, status: 'todo', priority, dueDate }, ...prev]);
+
+        const newRow = { title, status: 'todo', priority, due_date: dueDate || null };
+        const { data, error } = await sb.from('tasks').insert(newRow).select().single();
+
+        if (error) {
+          showError('Failed to add task: ' + error.message);
+          return;
+        }
+
+        setTasks(prev => [rowToTask(data), ...prev]);
         setInput('');
         setPriority('medium');
         setDueDate('');
       }
 
-      function moveTask(id, direction) {
-        setTasks(prev => prev.map(t => {
-          if (t.id !== id) return t;
-          const idx = STATUSES.indexOf(t.status);
-          const next = direction === 'left' ? idx - 1 : idx + 1;
-          if (next < 0 || next >= STATUSES.length) return t;
-          return { ...t, status: STATUSES[next] };
-        }));
+      /* ── moveTask: optimistic status update ── */
+      async function moveTask(id, direction) {
+        const task = tasks.find(t => t.id === id);
+        if (!task) return;
+
+        const idx = STATUSES.indexOf(task.status);
+        const nextIdx = direction === 'left' ? idx - 1 : idx + 1;
+        if (nextIdx < 0 || nextIdx >= STATUSES.length) return;
+
+        const nextStatus = STATUSES[nextIdx];
+
+        // Optimistic update
+        setTasks(prev => prev.map(t => t.id === id ? { ...t, status: nextStatus } : t));
+
+        const { error } = await sb
+          .from('tasks')
+          .update({ status: nextStatus })
+          .eq('id', id);
+
+        if (error) {
+          // Revert
+          setTasks(prev => prev.map(t => t.id === id ? { ...t, status: task.status } : t));
+          showError('Failed to move task: ' + error.message);
+        }
       }
 
-      function deleteTask(id) {
+      /* ── deleteTask: remove row, remove from local state ── */
+      async function deleteTask(id) {
+        // Optimistic remove
+        const snapshot = tasks;
         setTasks(prev => prev.filter(t => t.id !== id));
+
+        const { error } = await sb.from('tasks').delete().eq('id', id);
+
+        if (error) {
+          setTasks(snapshot);
+          showError('Failed to delete task: ' + error.message);
+        }
       }
 
-      function editTask(id, newTitle) {
+      /* ── editTask: optimistic title update ── */
+      async function editTask(id, newTitle) {
         const title = newTitle.trim();
         if (!title) { showError('Title cannot be empty.'); return; }
+
+        const task = tasks.find(t => t.id === id);
+        if (!task) return;
+
+        // Optimistic update
         setTasks(prev => prev.map(t => t.id === id ? { ...t, title } : t));
+
+        const { error } = await sb
+          .from('tasks')
+          .update({ title })
+          .eq('id', id);
+
+        if (error) {
+          // Revert
+          setTasks(prev => prev.map(t => t.id === id ? { ...t, title: task.title } : t));
+          showError('Failed to update task: ' + error.message);
+        }
       }
 
       const byStatus = status => tasks.filter(t => t.status === status);
@@ -326,7 +397,9 @@
             <h1 className="font-display text-3xl font-800 text-stone-900 tracking-tight mb-1">
               Task Board
             </h1>
-            <p className="font-mono text-xs text-stone-400">{tasks.length} task{tasks.length !== 1 ? 's' : ''} total</p>
+            <p className="font-mono text-xs text-stone-400">
+              {loading ? 'Loading…' : `${tasks.length} task${tasks.length !== 1 ? 's' : ''} total`}
+            </p>
           </div>
 
           {/* Add Task Form */}
@@ -364,19 +437,34 @@
             </button>
           </form>
 
-          {/* Columns */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {STATUSES.map(status => (
-              <Column
-                key={status}
-                status={status}
-                tasks={byStatus(status)}
-                onMove={moveTask}
-                onDelete={deleteTask}
-                onEdit={editTask}
-              />
-            ))}
-          </div>
+          {/* Loading skeleton */}
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {STATUSES.map(s => (
+                <div key={s} className={`flex flex-col bg-stone-50 rounded-2xl shadow-sm border border-stone-200 ${COLUMN_META[s].colClass} overflow-hidden`}>
+                  <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
+                    <h2 className="font-display font-700 text-stone-800 text-base tracking-tight">{COLUMN_META[s].label}</h2>
+                  </div>
+                  <div className="p-4">
+                    <div className="h-16 bg-stone-100 rounded-xl animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {STATUSES.map(status => (
+                <Column
+                  key={status}
+                  status={status}
+                  tasks={byStatus(status)}
+                  onMove={moveTask}
+                  onDelete={deleteTask}
+                  onEdit={editTask}
+                />
+              ))}
+            </div>
+          )}
         </div>
       );
     }
