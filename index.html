@@ -58,7 +58,9 @@
     .badge-done       { background: #d1fae5; color: #065f46; }
 
     input[type="text"]:focus,
-    input[type="date"]:focus {
+    input[type="date"]:focus,
+    input[type="email"]:focus,
+    input[type="password"]:focus {
       outline: none;
       box-shadow: 0 0 0 2px #3b82f6;
     }
@@ -70,6 +72,15 @@
 
     input[type="date"] {
       color-scheme: light;
+    }
+
+    @keyframes authFadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .auth-card {
+      animation: authFadeIn 0.25s ease-out;
     }
   </style>
 </head>
@@ -85,7 +96,6 @@
     );
 
     /* ── DB row → app task ───────────────────────────── */
-    // DB uses due_date; app uses dueDate. Normalise here.
     function rowToTask(row) {
       return {
         id:       row.id,
@@ -122,6 +132,103 @@
       today.setHours(0, 0, 0, 0);
       const [y, m, d] = iso.split('-').map(Number);
       return new Date(y, m - 1, d) < today;
+    }
+
+    /* ── AuthForm ─────────────────────────────────────── */
+    function AuthForm() {
+      const [mode, setMode] = React.useState('login'); // 'login' | 'signup'
+      const [email, setEmail] = React.useState('');
+      const [password, setPassword] = React.useState('');
+      const [loading, setLoading] = React.useState(false);
+      const [error, setError] = React.useState('');
+
+      async function handleSubmit(e) {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+
+        if (mode === 'login') {
+          const { error } = await sb.auth.signInWithPassword({ email, password });
+          if (error) setError(error.message);
+        } else {
+          const { error } = await sb.auth.signUp({ email, password });
+          if (error) setError(error.message);
+          // onAuthStateChange handles session update; no manual sign-in needed
+        }
+
+        setLoading(false);
+      }
+
+      return (
+        <div className="min-h-screen flex items-center justify-center px-4">
+          <div className="auth-card w-full max-w-sm">
+            {/* Brand */}
+            <div className="mb-8 text-center">
+              <h1 className="font-display text-3xl font-800 text-stone-900 tracking-tight">
+                Task Board
+              </h1>
+              <p className="font-mono text-xs text-stone-400 mt-1">
+                {mode === 'login' ? 'sign in to continue' : 'create your account'}
+              </p>
+            </div>
+
+            {/* Card */}
+            <div className="bg-white rounded-2xl border border-stone-200 shadow-sm px-7 py-8">
+              {error && (
+                <div className="mb-5 font-mono text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+                  {error}
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-mono text-xs text-stone-500">Email</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    required
+                    placeholder="you@example.com"
+                    className="font-mono text-sm bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-stone-800 placeholder-stone-300 transition-shadow"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-mono text-xs text-stone-500">Password</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    required
+                    placeholder="••••••••"
+                    minLength={6}
+                    className="font-mono text-sm bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-stone-800 placeholder-stone-300 transition-shadow"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="mt-2 font-display font-600 text-sm bg-stone-900 text-white px-6 py-3 rounded-xl hover:bg-stone-700 active:scale-95 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Please wait…' : mode === 'login' ? 'Sign In' : 'Sign Up'}
+                </button>
+              </form>
+            </div>
+
+            {/* Toggle */}
+            <p className="font-mono text-xs text-stone-400 text-center mt-5">
+              {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
+              <button
+                onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); }}
+                className="text-stone-700 underline underline-offset-2 hover:text-stone-900 transition-colors"
+              >
+                {mode === 'login' ? 'Sign up' : 'Sign in'}
+              </button>
+            </p>
+          </div>
+        </div>
+      );
     }
 
     /* ── TaskCard ─────────────────────────────────────── */
@@ -264,7 +371,7 @@
     }
 
     /* ── TaskBoard ────────────────────────────────────── */
-    function TaskBoard() {
+    function TaskBoard({ user }) {
       const [tasks, setTasks] = React.useState([]);
       const [loading, setLoading] = React.useState(true);
       const [input, setInput] = React.useState('');
@@ -284,7 +391,6 @@
         setError('');
       }
 
-      /* ── Load tasks on mount ── */
       React.useEffect(() => {
         async function fetchTasks() {
           const { data, error } = await sb
@@ -302,7 +408,6 @@
         fetchTasks();
       }, []);
 
-      /* ── addTask: insert row, append to local state ── */
       async function addTask(e) {
         e.preventDefault();
         const title = input.trim();
@@ -322,7 +427,6 @@
         setDueDate('');
       }
 
-      /* ── moveTask: optimistic status update ── */
       async function moveTask(id, direction) {
         const task = tasks.find(t => t.id === id);
         if (!task) return;
@@ -332,25 +436,17 @@
         if (nextIdx < 0 || nextIdx >= STATUSES.length) return;
 
         const nextStatus = STATUSES[nextIdx];
-
-        // Optimistic update
         setTasks(prev => prev.map(t => t.id === id ? { ...t, status: nextStatus } : t));
 
-        const { error } = await sb
-          .from('tasks')
-          .update({ status: nextStatus })
-          .eq('id', id);
+        const { error } = await sb.from('tasks').update({ status: nextStatus }).eq('id', id);
 
         if (error) {
-          // Revert
           setTasks(prev => prev.map(t => t.id === id ? { ...t, status: task.status } : t));
           showError('Failed to move task: ' + error.message);
         }
       }
 
-      /* ── deleteTask: remove row, remove from local state ── */
       async function deleteTask(id) {
-        // Optimistic remove
         const snapshot = tasks;
         setTasks(prev => prev.filter(t => t.id !== id));
 
@@ -362,7 +458,6 @@
         }
       }
 
-      /* ── editTask: optimistic title update ── */
       async function editTask(id, newTitle) {
         const title = newTitle.trim();
         if (!title) { showError('Title cannot be empty.'); return; }
@@ -370,19 +465,19 @@
         const task = tasks.find(t => t.id === id);
         if (!task) return;
 
-        // Optimistic update
         setTasks(prev => prev.map(t => t.id === id ? { ...t, title } : t));
 
-        const { error } = await sb
-          .from('tasks')
-          .update({ title })
-          .eq('id', id);
+        const { error } = await sb.from('tasks').update({ title }).eq('id', id);
 
         if (error) {
-          // Revert
           setTasks(prev => prev.map(t => t.id === id ? { ...t, title: task.title } : t));
           showError('Failed to update task: ' + error.message);
         }
+      }
+
+      async function handleLogout() {
+        await sb.auth.signOut();
+        // onAuthStateChange in App will clear the user
       }
 
       const byStatus = status => tasks.filter(t => t.status === status);
@@ -393,13 +488,28 @@
           <ErrorBanner message={error} onClose={dismissError} />
 
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="font-display text-3xl font-800 text-stone-900 tracking-tight mb-1">
-              Task Board
-            </h1>
-            <p className="font-mono text-xs text-stone-400">
-              {loading ? 'Loading…' : `${tasks.length} task${tasks.length !== 1 ? 's' : ''} total`}
-            </p>
+          <div className="mb-8 flex items-start justify-between gap-4">
+            <div>
+              <h1 className="font-display text-3xl font-800 text-stone-900 tracking-tight mb-1">
+                Task Board
+              </h1>
+              <p className="font-mono text-xs text-stone-400">
+                {loading ? 'Loading…' : `${tasks.length} task${tasks.length !== 1 ? 's' : ''} total`}
+              </p>
+            </div>
+
+            {/* User + logout */}
+            <div className="flex items-center gap-3 pt-1 shrink-0">
+              <span className="font-mono text-xs text-stone-400 hidden sm:block truncate max-w-[180px]">
+                {user.email}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="font-mono text-xs text-stone-500 border border-stone-200 bg-white px-3 py-1.5 rounded-lg hover:bg-stone-100 hover:text-stone-800 transition-colors shadow-sm"
+              >
+                Sign out
+              </button>
+            </div>
           </div>
 
           {/* Add Task Form */}
@@ -437,7 +547,7 @@
             </button>
           </form>
 
-          {/* Loading skeleton */}
+          {/* Columns */}
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {STATUSES.map(s => (
@@ -469,7 +579,40 @@
       );
     }
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<TaskBoard />);
+    /* ── App (auth gate) ──────────────────────────────── */
+    function App() {
+      // null = loading, false = no session, object = authenticated user
+      const [user, setUser] = React.useState(null);
+
+      React.useEffect(() => {
+        // Resolve initial session
+        sb.auth.getSession().then(({ data: { session } }) => {
+          setUser(session?.user ?? false);
+        });
+
+        // Listen for login / logout events
+        const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
+          setUser(session?.user ?? false);
+        });
+
+        return () => subscription.unsubscribe();
+      }, []);
+
+      // Still resolving session
+      if (user === null) {
+        return (
+          <div className="min-h-screen flex items-center justify-center">
+            <p className="font-mono text-xs text-stone-400">Loading…</p>
+          </div>
+        );
+      }
+
+      if (user === false) return <AuthForm />;
+
+      return <TaskBoard user={user} />;
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </script>
 </body>
 </html>
