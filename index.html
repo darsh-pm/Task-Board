@@ -177,6 +177,28 @@
     .confirm-banner {
       animation: confirmIn 0.2s ease-out;
     }
+
+    /* Validation shake */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%       { transform: translateX(-5px); }
+      40%       { transform: translateX(5px); }
+      60%       { transform: translateX(-4px); }
+      80%       { transform: translateX(4px); }
+    }
+    .field-invalid {
+      box-shadow: 0 0 0 2px #ef4444 !important;
+      animation: shake 0.35s ease-out;
+    }
+
+    /* Overdue filter button active pulse */
+    @keyframes overdueGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+      50%       { box-shadow: 0 0 0 4px rgba(239,68,68,0.1); }
+    }
+    .overdue-active {
+      animation: overdueGlow 2s ease-in-out infinite;
+    }
   </style>
 </head>
 <body>
@@ -368,10 +390,13 @@
       const [saving, setSaving] = React.useState(false);
       const [confirmDone, setConfirmDone] = React.useState(false);
 
-      // Track whether all subtasks are done (only show prompt when list is non-empty)
+      // Validation state
+      const [validationError, setValidationError] = React.useState('');
+      const [invalidFields, setInvalidFields] = React.useState([]);
+
+      // Track whether all subtasks are done
       const allDone = subtasks.length > 0 && subtasks.every(s => s.done);
 
-      // Show confirm banner when all subtasks just became done and task isn't already done
       React.useEffect(() => {
         if (allDone && task.status !== 'done') {
           setConfirmDone(true);
@@ -380,14 +405,40 @@
         }
       }, [allDone, task.status]);
 
-      // Close on Escape
+      // Validate mandatory fields before allowing close
+      function validateMandatoryFields() {
+        const missing = [];
+        const labels = [];
+        if (!dueDate) { missing.push('dueDate'); labels.push('Due date'); }
+        if (!description.trim()) { missing.push('description'); labels.push('Description'); }
+        // priority always has a value; check it's not empty string just in case
+        if (!priority) { missing.push('priority'); labels.push('Priority'); }
+
+        if (missing.length > 0) {
+          setInvalidFields(missing);
+          setValidationError(`Required before closing: ${labels.join(', ')}`);
+          // Clear highlight after animation
+          setTimeout(() => setInvalidFields([]), 800);
+          return false;
+        }
+        setValidationError('');
+        setInvalidFields([]);
+        return true;
+      }
+
+      function handleClose() {
+        if (!validateMandatoryFields()) return;
+        onClose();
+      }
+
+      // Close on Escape — also validate
       React.useEffect(() => {
         function onKeyDown(e) {
-          if (e.key === 'Escape') onClose();
+          if (e.key === 'Escape') handleClose();
         }
         window.addEventListener('keydown', onKeyDown);
         return () => window.removeEventListener('keydown', onKeyDown);
-      }, [onClose]);
+      }, [dueDate, description, priority]);
 
       async function save(patch) {
         setSaving(true);
@@ -405,18 +456,22 @@
         const val = e.target.value;
         setPriority(val);
         await save({ priority: val });
+        // Clear validation if now filled
+        setInvalidFields(prev => prev.filter(f => f !== 'priority'));
       }
 
       async function handleDueDateChange(e) {
         const val = e.target.value;
         setDueDate(val);
         await save({ due_date: val || null });
+        if (val) setInvalidFields(prev => prev.filter(f => f !== 'dueDate'));
       }
 
       async function handleDescriptionBlur() {
         if (description !== task.description) {
           await save({ description: description || null });
         }
+        if (description.trim()) setInvalidFields(prev => prev.filter(f => f !== 'description'));
       }
 
       async function toggleSubtask(id) {
@@ -449,11 +504,15 @@
 
       const completedCount = subtasks.filter(s => s.done).length;
 
+      function fieldClass(base, fieldName) {
+        return `${base} ${invalidFields.includes(fieldName) ? 'field-invalid' : ''}`;
+      }
+
       return (
         <div
           className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center px-4"
           style={{ background: 'rgba(28,25,23,0.45)', backdropFilter: 'blur(4px)' }}
-          onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+          onClick={e => { if (e.target === e.currentTarget) handleClose(); }}
         >
           <div className="modal-panel bg-white rounded-2xl shadow-xl border border-stone-200 w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
 
@@ -465,10 +524,24 @@
                 </span>
                 {saving && <span className="font-mono text-[10px] text-stone-400">saving…</span>}
               </div>
-              <button onClick={onClose}
+              <button onClick={handleClose}
                 className="w-7 h-7 flex items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors text-lg leading-none"
                 title="Close">×</button>
             </div>
+
+            {/* Validation error banner */}
+            {validationError && (
+              <div className="confirm-banner mx-6 mt-4 flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-red-500 shrink-0">
+                  <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.4"/>
+                  <line x1="7" y1="4" x2="7" y2="7.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                  <circle cx="7" cy="9.5" r="0.7" fill="currentColor"/>
+                </svg>
+                <p className="font-mono text-xs text-red-700 flex-1">{validationError}</p>
+                <button onClick={() => setValidationError('')}
+                  className="font-mono text-xs text-red-400 hover:text-red-600 transition-colors shrink-0">×</button>
+              </div>
+            )}
 
             {/* Scrollable body */}
             <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
@@ -504,36 +577,44 @@
               {/* Priority + Due Date row */}
               <div className="flex gap-4 flex-wrap">
                 <div className="flex flex-col gap-1.5 flex-1 min-w-28">
-                  <label className="font-mono text-[11px] text-stone-400 uppercase tracking-widest">Priority</label>
+                  <label className="font-mono text-[11px] text-stone-400 uppercase tracking-widest">
+                    Priority <span className="text-red-400">*</span>
+                  </label>
                   <select value={priority} onChange={handlePriorityChange}
-                    className="font-mono text-sm bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-stone-700 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer">
+                    className={fieldClass("font-mono text-sm bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-stone-700 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer", 'priority')}>
                     {PRIORITIES.map(p => <option key={p} value={p}>{PRIORITY_META[p].label}</option>)}
                   </select>
                 </div>
                 <div className="flex flex-col gap-1.5 flex-1 min-w-36">
-                  <label className="font-mono text-[11px] text-stone-400 uppercase tracking-widest">Due Date</label>
+                  <label className="font-mono text-[11px] text-stone-400 uppercase tracking-widest">
+                    Due Date <span className="text-red-400">*</span>
+                  </label>
                   <input type="date" value={dueDate} onChange={handleDueDateChange}
-                    className="font-mono text-sm bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-stone-700 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer" />
+                    className={fieldClass("font-mono text-sm bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-stone-700 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer", 'dueDate')} />
                 </div>
               </div>
 
-              {/* Description */}
+              {/* Description — mandatory */}
               <div className="flex flex-col gap-1.5">
-                <label className="font-mono text-[11px] text-stone-400 uppercase tracking-widest">Description</label>
+                <label className="font-mono text-[11px] text-stone-400 uppercase tracking-widest">
+                  Description <span className="text-red-400">*</span>
+                </label>
                 <textarea
                   value={description}
                   onChange={e => setDescription(e.target.value)}
                   onBlur={handleDescriptionBlur}
                   placeholder="Add a description…"
                   rows={3}
-                  className="font-mono text-sm bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-stone-700 placeholder-stone-300 resize-none transition-shadow"
+                  className={fieldClass("font-mono text-sm bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-stone-700 placeholder-stone-300 resize-none transition-shadow", 'description')}
                 />
               </div>
 
-              {/* Subtasks */}
+              {/* Subtasks — optional */}
               <div className="flex flex-col gap-2.5">
                 <div className="flex items-center justify-between">
-                  <label className="font-mono text-[11px] text-stone-400 uppercase tracking-widest">Subtasks</label>
+                  <label className="font-mono text-[11px] text-stone-400 uppercase tracking-widest">
+                    Subtasks <span className="text-stone-300 normal-case tracking-normal">(optional)</span>
+                  </label>
                   {subtasks.length > 0 && (
                     <span className="font-mono text-[11px] text-stone-400">
                       {completedCount}/{subtasks.length}
@@ -541,7 +622,6 @@
                   )}
                 </div>
 
-                {/* Progress bar */}
                 {subtasks.length > 0 && (
                   <div className="h-1 bg-stone-100 rounded-full overflow-hidden">
                     <div
@@ -551,7 +631,6 @@
                   </div>
                 )}
 
-                {/* Subtask items */}
                 <div className="flex flex-col gap-1.5">
                   {subtasks.map(s => (
                     <div key={s.id} className="flex items-start gap-2.5 group py-1">
@@ -572,7 +651,6 @@
                   ))}
                 </div>
 
-                {/* Add subtask */}
                 <form onSubmit={addSubtask} className="flex gap-2 mt-1">
                   <input
                     type="text"
@@ -591,8 +669,11 @@
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-stone-100 flex justify-end">
-              <button onClick={onClose}
+            <div className="px-6 py-4 border-t border-stone-100 flex items-center justify-between">
+              <p className="font-mono text-[10px] text-stone-400">
+                <span className="text-red-400">*</span> required fields
+              </p>
+              <button onClick={handleClose}
                 className="font-mono text-xs text-stone-500 border border-stone-200 bg-white px-4 py-2 rounded-xl hover:bg-stone-100 hover:text-stone-800 transition-colors">
                 Close
               </button>
@@ -605,8 +686,10 @@
     /* ── TaskCard ─────────────────────────────────────── */
     function TaskCard({ task, onMove, onDelete, onEdit, onOpenDetail }) {
       const idx = STATUSES.indexOf(task.status);
-      const formattedDate = formatDate(task.dueDate);
-      const overdue = isOverdue(task.dueDate);
+      // Change 4: hide due date on Done cards
+      const showDate = task.status !== 'done';
+      const formattedDate = showDate ? formatDate(task.dueDate) : null;
+      const overdue = showDate && isOverdue(task.dueDate);
 
       const [editing, setEditing] = React.useState(false);
       const [draft, setDraft] = React.useState('');
@@ -680,7 +763,7 @@
             </div>
           </div>
 
-          {/* Meta row: date + subtask progress */}
+          {/* Meta row: date (hidden for done) + subtask progress */}
           <div className="flex items-center gap-3 mt-1.5">
             {formattedDate && (
               <div className={`flex items-center gap-1 font-mono text-[11px] ${overdue ? 'text-red-500' : 'text-stone-400'}`}>
@@ -751,12 +834,11 @@
       const [tasks, setTasks] = React.useState([]);
       const [loading, setLoading] = React.useState(true);
       const [input, setInput] = React.useState('');
-      const [priority, setPriority] = React.useState('medium');
-      const [dueDate, setDueDate] = React.useState('');
       const [error, setError] = React.useState('');
       const [aiLoading, setAiLoading] = React.useState(false);
       const [aiResponse, setAiResponse] = React.useState(null);
-      const [detailTask, setDetailTask] = React.useState(null); // task being viewed in modal
+      const [detailTask, setDetailTask] = React.useState(null);
+      const [overdueFilter, setOverdueFilter] = React.useState(false); // Change 3
 
       const errorTimerRef = React.useRef(null);
 
@@ -802,20 +884,22 @@
         }
       }
 
+      // Change 1: Add form only has title; immediately opens modal after creating task
       async function addTask(e) {
         e.preventDefault();
         const title = input.trim();
         if (!title) { showError('Title cannot be empty.'); return; }
 
-        const newRow = { title, status: 'todo', priority, due_date: dueDate || null };
+        const newRow = { title, status: 'todo', priority: 'medium', due_date: null };
         const { data, error } = await sb.from('tasks').insert(newRow).select().single();
 
         if (error) { showError('Failed to add task: ' + error.message); return; }
 
-        setTasks(prev => [rowToTask(data), ...prev]);
+        const created = rowToTask(data);
+        setTasks(prev => [created, ...prev]);
         setInput('');
-        setPriority('medium');
-        setDueDate('');
+        // Immediately open detail modal for the new task
+        setDetailTask(created);
       }
 
       async function moveTask(id, direction) {
@@ -837,7 +921,6 @@
         }
       }
 
-      /* Used by modal to move to done */
       async function moveTaskToStatus(id, status) {
         const task = tasks.find(t => t.id === id);
         if (!task) return;
@@ -881,9 +964,7 @@
         }
       }
 
-      /* Patch task fields from modal — updates both Supabase and local state */
       async function patchTask(id, patch) {
-        // Optimistic local update
         setTasks(prev => prev.map(t => {
           if (t.id !== id) return t;
           const updated = { ...t };
@@ -895,7 +976,6 @@
           return updated;
         }));
 
-        // Also keep detailTask in sync so modal sees fresh data
         setDetailTask(prev => {
           if (!prev || prev.id !== id) return prev;
           const updated = { ...prev };
@@ -918,8 +998,22 @@
         await sb.auth.signOut();
       }
 
-      const byStatus = status => tasks.filter(t => t.status === status);
+      // Change 3: overdue filter logic
+      const overdueCount = tasks.filter(t =>
+        t.status !== 'done' && isOverdue(t.dueDate)
+      ).length;
+
+      function getColumnTasks(status) {
+        if (!overdueFilter) return tasks.filter(t => t.status === status);
+        // Overdue filter: only todo/inprogress with past due date
+        if (status === 'done') return []; // done column hidden via render logic
+        return tasks.filter(t =>
+          t.status === status && isOverdue(t.dueDate)
+        );
+      }
+
       const activeCount = tasks.filter(t => t.status !== 'done').length;
+      const visibleStatuses = overdueFilter ? ['todo', 'inprogress'] : STATUSES;
 
       return (
         <div className="min-h-screen px-6 py-10 max-w-6xl mx-auto">
@@ -934,6 +1028,34 @@
               </p>
             </div>
             <div className="flex items-center gap-2 pt-1 shrink-0 flex-wrap justify-end">
+
+              {/* Change 3: Overdue filter button */}
+              <button
+                onClick={() => setOverdueFilter(f => !f)}
+                disabled={loading}
+                title={overdueFilter ? 'Clear overdue filter' : 'Show overdue tasks only'}
+                className={`flex items-center gap-2 font-mono text-xs px-3 py-1.5 rounded-lg border transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed
+                  ${overdueFilter
+                    ? 'bg-red-600 text-white border-red-700 hover:bg-red-700 overdue-active'
+                    : overdueCount > 0
+                      ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:border-red-300'
+                      : 'bg-white text-stone-500 border-stone-200 hover:bg-stone-100'
+                  }`}
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.3"/>
+                  <line x1="6" y1="3.5" x2="6" y2="6.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                  <circle cx="6" cy="8.2" r="0.7" fill="currentColor"/>
+                </svg>
+                Overdue
+                {overdueCount > 0 && (
+                  <span className={`font-mono text-[10px] font-medium px-1.5 py-0.5 rounded-full min-w-[18px] text-center
+                    ${overdueFilter ? 'bg-white text-red-600' : 'bg-red-500 text-white'}`}>
+                    {overdueCount}
+                  </span>
+                )}
+              </button>
+
               <button onClick={handleAIPrioritize} disabled={aiLoading || loading || activeCount === 0}
                 title={activeCount === 0 ? 'No active tasks to analyze' : 'Analyze tasks with AI'}
                 className="flex items-center gap-2 font-mono text-xs border border-amber-300 bg-amber-50 text-amber-800 px-3 py-1.5 rounded-lg hover:bg-amber-100 hover:border-amber-400 transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed">
@@ -956,31 +1078,45 @@
             </div>
           </div>
 
+          {/* Overdue filter active indicator */}
+          {overdueFilter && (
+            <div className="confirm-banner mb-6 flex items-center justify-between gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+              <div className="flex items-center gap-2">
+                <svg width="13" height="13" viewBox="0 0 12 12" fill="none" className="text-red-500 shrink-0">
+                  <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.3"/>
+                  <line x1="6" y1="3.5" x2="6" y2="6.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                  <circle cx="6" cy="8.2" r="0.7" fill="currentColor"/>
+                </svg>
+                <p className="font-mono text-xs text-red-700">
+                  Showing {overdueCount} overdue task{overdueCount !== 1 ? 's' : ''} — Done column hidden
+                </p>
+              </div>
+              <button onClick={() => setOverdueFilter(false)}
+                className="font-mono text-xs text-red-500 hover:text-red-700 underline underline-offset-2 transition-colors shrink-0">
+                Clear filter
+              </button>
+            </div>
+          )}
+
           {/* AI Panel */}
           {aiResponse !== null && (
             <AIPriorityPanel response={aiResponse} onClose={() => setAiResponse(null)} />
           )}
 
-          {/* Add Task Form */}
+          {/* Change 1: Add Task Form — title only */}
           <form onSubmit={addTask} className="flex gap-3 mb-10 flex-wrap">
             <input type="text" value={input} onChange={e => setInput(e.target.value)} placeholder="New task title…"
               className="flex-1 font-mono text-sm bg-white border border-stone-200 rounded-xl px-4 py-3 text-stone-800 placeholder-stone-300 shadow-sm transition-shadow min-w-40" />
-            <select value={priority} onChange={e => setPriority(e.target.value)}
-              className="font-mono text-sm bg-white border border-stone-200 rounded-xl px-3 py-3 text-stone-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer">
-              {PRIORITIES.map(p => <option key={p} value={p}>{PRIORITY_META[p].label}</option>)}
-            </select>
-            <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} title="Due date (optional)"
-              className="font-mono text-sm bg-white border border-stone-200 rounded-xl px-3 py-3 text-stone-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer" />
             <button type="submit"
               className="font-display font-600 text-sm bg-stone-900 text-white px-6 py-3 rounded-xl hover:bg-stone-700 active:scale-95 transition-all shadow-sm">
               Add
             </button>
           </form>
 
-          {/* Columns */}
+          {/* Columns — Change 3: done hidden when overdueFilter active */}
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {STATUSES.map(s => (
+            <div className={`grid grid-cols-1 gap-5 ${overdueFilter ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+              {visibleStatuses.map(s => (
                 <div key={s} className={`flex flex-col bg-stone-50 rounded-2xl shadow-sm border border-stone-200 ${COLUMN_META[s].colClass} overflow-hidden`}>
                   <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
                     <h2 className="font-display font-700 text-stone-800 text-base tracking-tight">{COLUMN_META[s].label}</h2>
@@ -992,9 +1128,9 @@
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {STATUSES.map(status => (
-                <Column key={status} status={status} tasks={byStatus(status)}
+            <div className={`grid grid-cols-1 gap-5 ${overdueFilter ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+              {visibleStatuses.map(status => (
+                <Column key={status} status={status} tasks={getColumnTasks(status)}
                   onMove={moveTask} onDelete={deleteTask} onEdit={editTask}
                   onOpenDetail={setDetailTask} />
               ))}
