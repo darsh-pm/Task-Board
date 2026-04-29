@@ -12,13 +12,20 @@
   <!-- Fonts with display=swap: page text visible before font loads -->
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
   <!-- Tailwind first — no JS dependency, unblocks layout -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" href="data:,">
+  <script>
+    tailwind = { config: {} }
+  </script>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
   <!-- React production builds (no dev warnings overhead) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Babel last: large script, only needed for JSX transform at parse time -->
+  <script>
+    window.BABEL_DISABLE_CACHE = true;
+  </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
   <script>
     tailwind.config = {
@@ -219,6 +226,13 @@
     const sb = createClient(
       'https://uqbvpytbqvlubuekgcbz.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxYnZweXRicXZsdWJ1ZWtnY2J6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDgwMzcsImV4cCI6MjA5MTAyNDAzN30._SvaS0J-geH725suru-0Gd0S53QuJ1Rd2Sevtg5Bg1E'
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: true,
+          detectSessionInUrl: false
+        }
+      }
     );
 
     const GROQ_KEY = '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';
@@ -1204,9 +1218,13 @@
       const [user, setUser] = React.useState(null);
 
       React.useEffect(() => {
-        sb.auth.getSession().then(({ data: { session } }) => {
-          setUser(session?.user ?? false);
-        });
+        sb.auth.getSession()
+          .then(({ data }) => {
+            setUser(data?.session?.user ?? false);
+          })
+          .catch(() => {
+            setUser(false);
+          });
 
         const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
           setUser(session?.user ?? false);
