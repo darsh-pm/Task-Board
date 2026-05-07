@@ -209,6 +209,23 @@
     .overdue-active {
       animation: overdueGlow 2s ease-in-out infinite;
     }
+
+    /* Drag and drop */
+    .task-card.dragging {
+      opacity: 0.4;
+      cursor: grabbing;
+    }
+    .task-card[draggable="true"] {
+      cursor: grab;
+    }
+    .column-drop-target {
+      transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+    }
+    .column-drop-target.drag-over {
+      background-color: #eef2ff !important;
+      border-color: #818cf8 !important;
+      box-shadow: inset 0 0 0 2px #818cf8;
+    }
   </style>
 </head>
 <body>
@@ -706,15 +723,15 @@
     }
 
     /* ── TaskCard ─────────────────────────────────────── */
-    function TaskCard({ task, onMove, onDelete, onEdit, onOpenDetail }) {
+    function TaskCard({ task, onMove, onDelete, onEdit, onOpenDetail, onDragStart, onDragEnd, isDragging }) {
       const idx = STATUSES.indexOf(task.status);
-      // Change 4: hide due date on Done cards
       const showDate = task.status !== 'done';
       const formattedDate = showDate ? formatDate(task.dueDate) : null;
       const overdue = showDate && isOverdue(task.dueDate);
 
       const [editing, setEditing] = React.useState(false);
       const [draft, setDraft] = React.useState('');
+      const [confirmDelete, setConfirmDelete] = React.useState(false);
       const inputRef = React.useRef(null);
 
       const completedSubtasks = task.subtasks.filter(s => s.done).length;
@@ -737,80 +754,117 @@
         if (e.key === 'Escape') setEditing(false);
       }
 
-      return (
-        <div className="task-card card-enter bg-white rounded-xl px-4 py-3 shadow-sm border border-stone-100">
-          <div className="flex items-start gap-3">
-            {editing ? (
-              <input
-                ref={inputRef}
-                type="text"
-                value={draft}
-                onChange={e => setDraft(e.target.value)}
-                onKeyDown={handleKeyDown}
-                onClick={e => e.stopPropagation()}
-                className="flex-1 font-mono text-sm bg-stone-50 border border-stone-200 rounded-lg px-2 py-0.5 text-stone-700 min-w-0"
-              />
-            ) : (
-              <button
-                onClick={() => onOpenDetail(task)}
-                className="flex-1 font-mono text-sm text-stone-700 leading-snug pt-0.5 break-words min-w-0 text-left hover:text-stone-900 transition-colors"
-                title="Open task detail"
-              >
-                {task.title}
-              </button>
-            )}
-            <span className={`font-mono text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 mt-0.5 ${(PRIORITY_META[task.priority] || PRIORITY_META['medium']).badgeClass}`}>
-              {(PRIORITY_META[task.priority] || PRIORITY_META['medium']).label}
-            </span>
-            <div className="flex items-center gap-1 shrink-0">
-              {editing ? (
-                <button onClick={saveEdit}
-                  className="font-mono text-[11px] font-medium px-2 py-1 rounded-lg bg-stone-900 text-white hover:bg-stone-700 transition-colors">Save</button>
-              ) : (
-                <>
-                  <button onClick={startEdit} title="Edit task"
-                    className="w-7 h-7 flex items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors">
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <path d="M8.5 1.5a1.414 1.414 0 0 1 2 2L3.5 10.5 1 11l.5-2.5 7-7z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
-                  <button onClick={e => { e.stopPropagation(); onMove(task.id, 'left'); }} disabled={idx === 0} title="Move left"
-                    className="w-7 h-7 flex items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-600 disabled:opacity-20 disabled:cursor-not-allowed transition-colors">←</button>
-                  <button onClick={e => { e.stopPropagation(); onMove(task.id, 'right'); }} disabled={idx === STATUSES.length - 1} title="Move right"
-                    className="w-7 h-7 flex items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-600 disabled:opacity-20 disabled:cursor-not-allowed transition-colors">→</button>
-                  <button onClick={e => { e.stopPropagation(); onDelete(task.id); }} title="Delete task"
-                    className="w-7 h-7 flex items-center justify-center rounded-lg text-stone-300 hover:bg-red-50 hover:text-red-400 transition-colors ml-0.5">×</button>
-                </>
-              )}
-            </div>
-          </div>
+      // Trash icon SVG
+      const TrashIcon = () => (
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M1.5 3h9M4.5 3V2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v1M5 5.5v3M7 5.5v3M2.5 3l.5 7a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5l.5-7" stroke="currentColor" strokeWidth="1.15" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      );
 
-          {/* Meta row: date (hidden for done) + subtask progress */}
-          <div className="flex items-center gap-3 mt-1.5">
-            {formattedDate && (
-              <div className={`flex items-center gap-1 font-mono text-[11px] ${overdue ? 'text-red-500' : 'text-stone-400'}`}>
-                <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-                  <rect x="1" y="2" width="10" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.2" fill="none"/>
-                  <line x1="4" y1="1" x2="4" y2="3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-                  <line x1="8" y1="1" x2="8" y2="3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-                  <line x1="1" y1="5" x2="11" y2="5" stroke="currentColor" strokeWidth="1"/>
-                </svg>
-                {formattedDate}
+      return (
+        <div
+          className={`task-card card-enter bg-white rounded-xl px-4 py-3 shadow-sm border border-stone-100 ${isDragging ? 'dragging' : ''}`}
+          draggable={!editing && !confirmDelete}
+          onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; onDragStart(task.id); }}
+          onDragEnd={onDragEnd}
+        >
+          {/* Inline delete confirmation */}
+          {confirmDelete ? (
+            <div className="flex items-center justify-between gap-2 py-0.5">
+              <p className="font-mono text-xs text-stone-500">Permanently delete this task?</p>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  onClick={e => { e.stopPropagation(); setConfirmDelete(false); }}
+                  className="font-mono text-[11px] px-2.5 py-1 rounded-lg border border-stone-200 text-stone-500 hover:bg-stone-100 transition-colors">
+                  Cancel
+                </button>
+                <button
+                  onClick={e => { e.stopPropagation(); onDelete(task.id); }}
+                  className="font-mono text-[11px] px-2.5 py-1 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors">
+                  Delete
+                </button>
               </div>
-            )}
-            {totalSubtasks > 0 && (
-              <div className="flex items-center gap-1.5 font-mono text-[11px] text-stone-400">
-                <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-                  <rect x="1" y="1" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.1" fill="none"/>
-                  <path d="M2.5 3l.8.8 1.7-1.7" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
-                  <rect x="7" y="1" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.1" fill="none"/>
-                  <rect x="1" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.1" fill="none"/>
-                  <rect x="7" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.1" fill="none"/>
-                </svg>
-                {completedSubtasks}/{totalSubtasks}
+            </div>
+          ) : (
+            <>
+              <div className="flex items-start gap-3">
+                {editing ? (
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={draft}
+                    onChange={e => setDraft(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onClick={e => e.stopPropagation()}
+                    className="flex-1 font-mono text-sm bg-stone-50 border border-stone-200 rounded-lg px-2 py-0.5 text-stone-700 min-w-0"
+                  />
+                ) : (
+                  <button
+                    onClick={() => onOpenDetail(task)}
+                    className="flex-1 font-mono text-sm text-stone-700 leading-snug pt-0.5 break-words min-w-0 text-left hover:text-stone-900 transition-colors"
+                    title="Open task detail"
+                  >
+                    {task.title}
+                  </button>
+                )}
+                <span className={`font-mono text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 mt-0.5 ${(PRIORITY_META[task.priority] || PRIORITY_META['medium']).badgeClass}`}>
+                  {(PRIORITY_META[task.priority] || PRIORITY_META['medium']).label}
+                </span>
+                <div className="flex items-center gap-1 shrink-0">
+                  {editing ? (
+                    <button onClick={saveEdit}
+                      className="font-mono text-[11px] font-medium px-2 py-1 rounded-lg bg-stone-900 text-white hover:bg-stone-700 transition-colors">Save</button>
+                  ) : (
+                    <>
+                      <button onClick={startEdit} title="Edit title"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                          <path d="M8.5 1.5a1.414 1.414 0 0 1 2 2L3.5 10.5 1 11l.5-2.5 7-7z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                      <button onClick={e => { e.stopPropagation(); onMove(task.id, 'left'); }} disabled={idx === 0} title="Move left"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-600 disabled:opacity-20 disabled:cursor-not-allowed transition-colors">←</button>
+                      <button onClick={e => { e.stopPropagation(); onMove(task.id, 'right'); }} disabled={idx === STATUSES.length - 1} title="Move right"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-600 disabled:opacity-20 disabled:cursor-not-allowed transition-colors">→</button>
+                      <button
+                        onClick={e => { e.stopPropagation(); setConfirmDelete(true); }}
+                        title="Delete task"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-stone-300 hover:bg-red-50 hover:text-red-400 transition-colors ml-0.5">
+                        <TrashIcon />
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
-            )}
-          </div>
+
+              {/* Meta row */}
+              <div className="flex items-center gap-3 mt-1.5">
+                {formattedDate && (
+                  <div className={`flex items-center gap-1 font-mono text-[11px] ${overdue ? 'text-red-500' : 'text-stone-400'}`}>
+                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                      <rect x="1" y="2" width="10" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+                      <line x1="4" y1="1" x2="4" y2="3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                      <line x1="8" y1="1" x2="8" y2="3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                      <line x1="1" y1="5" x2="11" y2="5" stroke="currentColor" strokeWidth="1"/>
+                    </svg>
+                    {formattedDate}
+                  </div>
+                )}
+                {totalSubtasks > 0 && (
+                  <div className="flex items-center gap-1.5 font-mono text-[11px] text-stone-400">
+                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                      <rect x="1" y="1" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.1" fill="none"/>
+                      <path d="M2.5 3l.8.8 1.7-1.7" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
+                      <rect x="7" y="1" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.1" fill="none"/>
+                      <rect x="1" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.1" fill="none"/>
+                      <rect x="7" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.1" fill="none"/>
+                    </svg>
+                    {completedSubtasks}/{totalSubtasks}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       );
     }
