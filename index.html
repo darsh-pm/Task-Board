@@ -4,21 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Darsh-Task Board</title>
-  <!-- Preconnect to CDNs so DNS+TLS is resolved before scripts request -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
-  <!-- Fonts with display=swap: page text visible before font loads -->
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
-  <!-- Tailwind first — no JS dependency, unblocks layout -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- React production builds (no dev warnings overhead) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- Babel last: large script, only needed for JSX transform at parse time -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
   <script>
     tailwind.config = {
@@ -41,23 +35,14 @@
       min-height: 100vh;
     }
 
-    .card-enter {
-      animation: slideIn 0.2s ease-out;
-    }
-
+    .card-enter { animation: slideIn 0.2s ease-out; }
     @keyframes slideIn {
       from { opacity: 0; transform: translateY(-8px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    .task-card {
-      transition: box-shadow 0.15s ease, transform 0.15s ease;
-    }
-
-    .task-card:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(0,0,0,0.09);
-    }
+    .task-card { transition: box-shadow 0.15s ease, transform 0.15s ease; }
+    .task-card:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.09); }
 
     .col-todo       { border-top: 3px solid #3b82f6; }
     .col-inprogress { border-top: 3px solid #f59e0b; }
@@ -75,120 +60,67 @@
       outline: none;
       box-shadow: 0 0 0 2px #3b82f6;
     }
-
-    button:focus-visible {
-      outline: 2px solid #3b82f6;
-      outline-offset: 2px;
-    }
-
-    input[type="date"] {
-      color-scheme: light;
-    }
+    button:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
+    input[type="date"] { color-scheme: light; }
 
     @keyframes authFadeIn {
       from { opacity: 0; transform: translateY(12px); }
       to   { opacity: 1; transform: translateY(0); }
     }
+    .auth-card { animation: authFadeIn 0.25s ease-out; }
 
-    .auth-card {
-      animation: authFadeIn 0.25s ease-out;
-    }
-
-    /* AI Panel */
     @keyframes panelSlideIn {
       from { opacity: 0; transform: translateY(-10px); max-height: 0; }
       to   { opacity: 1; transform: translateY(0); max-height: 600px; }
     }
+    .ai-panel { animation: panelSlideIn 0.25s ease-out forwards; }
 
-    .ai-panel {
-      animation: panelSlideIn 0.25s ease-out forwards;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
+    @keyframes spin { to { transform: rotate(360deg); } }
     .spinner {
       animation: spin 0.8s linear infinite;
       display: inline-block;
-      width: 12px;
-      height: 12px;
+      width: 12px; height: 12px;
       border: 2px solid rgba(255,255,255,0.3);
       border-top-color: white;
       border-radius: 50%;
     }
-
     .groq-response { white-space: pre-wrap; }
 
-    /* Modal */
     @keyframes modalIn {
       from { opacity: 0; transform: translateY(16px) scale(0.98); }
       to   { opacity: 1; transform: translateY(0) scale(1); }
     }
-
     @keyframes backdropIn {
       from { opacity: 0; }
       to   { opacity: 1; }
     }
+    .modal-backdrop { animation: backdropIn 0.18s ease-out forwards; }
+    .modal-panel    { animation: modalIn 0.22s ease-out forwards; }
 
-    .modal-backdrop {
-      animation: backdropIn 0.18s ease-out forwards;
-    }
-
-    .modal-panel {
-      animation: modalIn 0.22s ease-out forwards;
-    }
-
-    /* Subtask checkbox */
     .subtask-check {
-      appearance: none;
-      -webkit-appearance: none;
-      width: 15px;
-      height: 15px;
-      border: 1.5px solid #d6d3cd;
-      border-radius: 4px;
-      background: white;
-      cursor: pointer;
-      flex-shrink: 0;
-      margin-top: 1px;
-      position: relative;
+      appearance: none; -webkit-appearance: none;
+      width: 15px; height: 15px;
+      border: 1.5px solid #d6d3cd; border-radius: 4px;
+      background: white; cursor: pointer; flex-shrink: 0;
+      margin-top: 1px; position: relative;
       transition: background 0.12s, border-color 0.12s;
     }
-
-    .subtask-check:checked {
-      background: #1c1917;
-      border-color: #1c1917;
-    }
-
+    .subtask-check:checked { background: #1c1917; border-color: #1c1917; }
     .subtask-check:checked::after {
       content: '';
-      position: absolute;
-      top: 2px;
-      left: 4px;
-      width: 5px;
-      height: 8px;
-      border: 1.5px solid white;
-      border-top: none;
-      border-left: none;
+      position: absolute; top: 2px; left: 4px;
+      width: 5px; height: 8px;
+      border: 1.5px solid white; border-top: none; border-left: none;
       transform: rotate(45deg);
     }
+    .subtask-done-text { text-decoration: line-through; color: #a8a29e; }
 
-    .subtask-done-text {
-      text-decoration: line-through;
-      color: #a8a29e;
-    }
-
-    /* Confirm banner */
     @keyframes confirmIn {
       from { opacity: 0; transform: translateY(-6px); }
       to   { opacity: 1; transform: translateY(0); }
     }
+    .confirm-banner { animation: confirmIn 0.2s ease-out; }
 
-    .confirm-banner {
-      animation: confirmIn 0.2s ease-out;
-    }
-
-    /* Validation shake */
     @keyframes shake {
       0%, 100% { transform: translateX(0); }
       20%       { transform: translateX(-5px); }
@@ -196,35 +128,26 @@
       60%       { transform: translateX(-4px); }
       80%       { transform: translateX(4px); }
     }
-    .field-invalid {
-      box-shadow: 0 0 0 2px #ef4444 !important;
-      animation: shake 0.35s ease-out;
-    }
+    .field-invalid { box-shadow: 0 0 0 2px #ef4444 !important; animation: shake 0.35s ease-out; }
 
-    /* Overdue filter button active pulse */
     @keyframes overdueGlow {
       0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
       50%       { box-shadow: 0 0 0 4px rgba(239,68,68,0.1); }
     }
-    .overdue-active {
-      animation: overdueGlow 2s ease-in-out infinite;
-    }
+    .overdue-active { animation: overdueGlow 2s ease-in-out infinite; }
 
-    /* Drag and drop */
-    .task-card.dragging {
-      opacity: 0.4;
-      cursor: grabbing;
-    }
-    .task-card[draggable="true"] {
-      cursor: grab;
-    }
-    .column-drop-target {
-      transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
-    }
+    .task-card.dragging { opacity: 0.4; cursor: grabbing; }
+    .task-card[draggable="true"] { cursor: grab; }
+    .column-drop-target { transition: background 0.15s, border-color 0.15s, box-shadow 0.15s; }
     .column-drop-target.drag-over {
       background-color: #eef2ff !important;
       border-color: #818cf8 !important;
       box-shadow: inset 0 0 0 2px #818cf8;
+    }
+
+    /* Demo banner */
+    .demo-banner {
+      background: linear-gradient(90deg, #1c1917 0%, #292524 100%);
     }
   </style>
 </head>
@@ -237,6 +160,16 @@
       'https://uqbvpytbqvlubuekgcbz.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxYnZweXRicXZsdWJ1ZWtnY2J6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDgwMzcsImV4cCI6MjA5MTAyNDAzN30._SvaS0J-geH725suru-0Gd0S53QuJ1Rd2Sevtg5Bg1E'
     );
+
+    /* ── Demo data ────────────────────────────────────── */
+    const DEMO_TASKS = [
+      { id: 'd1', title: 'Define Q3 product roadmap', status: 'todo', priority: 'high', dueDate: '2026-06-15', description: 'Align with stakeholders on key themes and initiatives for Q3. Include engineering capacity estimates.', subtasks: [{ id: 's1', text: 'Draft initial themes', done: true }, { id: 's2', text: 'Review with engineering lead', done: false }, { id: 's3', text: 'Present to leadership', done: false }] },
+      { id: 'd2', title: 'User interview synthesis', status: 'todo', priority: 'high', dueDate: '2026-06-10', description: 'Synthesize findings from 8 user interviews conducted last week. Identify top 3 pain points.', subtasks: [{ id: 's4', text: 'Transcribe notes', done: true }, { id: 's5', text: 'Tag themes', done: true }, { id: 's6', text: 'Write synthesis doc', done: false }] },
+      { id: 'd3', title: 'Update onboarding flow', status: 'inprogress', priority: 'medium', dueDate: '2026-06-20', description: 'Redesign the onboarding checklist based on drop-off data. Focus on reducing steps 3 and 4.', subtasks: [] },
+      { id: 'd4', title: 'Competitive analysis — pricing', status: 'inprogress', priority: 'low', dueDate: '2026-06-25', description: 'Survey pricing pages of 5 competitors. Document positioning and packaging differences.', subtasks: [{ id: 's7', text: 'List competitors', done: true }, { id: 's8', text: 'Document pricing tiers', done: false }] },
+      { id: 'd5', title: 'Write release notes for v2.4', status: 'done', priority: 'medium', dueDate: '2026-06-01', description: 'Customer-facing release notes covering new dashboard, export feature, and bug fixes.', subtasks: [] },
+      { id: 'd6', title: 'Sprint retrospective action items', status: 'done', priority: 'low', dueDate: '2026-06-03', description: 'Document and assign follow-up actions from the sprint retro. Share with team by EOD.', subtasks: [{ id: 's9', text: 'Collect retro notes', done: true }, { id: 's10', text: 'Assign owners', done: true }] },
+    ];
 
     /* ── DB row → app task ───────────────────────────── */
     function rowToTask(row) {
@@ -283,6 +216,16 @@
       return Math.random().toString(36).slice(2, 10);
     }
 
+    /* ── Demo data ────────────────────────────────────── */
+    const DEMO_TASKS = [
+      { id: 'd1', title: 'Define Q3 product roadmap', status: 'todo', priority: 'high', dueDate: '2026-06-15', description: 'Align with stakeholders on key themes and initiatives for Q3. Include engineering capacity estimates.', subtasks: [{ id: 's1', text: 'Draft initial themes', done: true }, { id: 's2', text: 'Review with engineering lead', done: false }, { id: 's3', text: 'Present to leadership', done: false }] },
+      { id: 'd2', title: 'User interview synthesis', status: 'todo', priority: 'high', dueDate: '2026-06-10', description: 'Synthesize findings from 8 user interviews conducted last week. Identify top 3 pain points.', subtasks: [{ id: 's4', text: 'Transcribe notes', done: true }, { id: 's5', text: 'Tag themes', done: true }, { id: 's6', text: 'Write synthesis doc', done: false }] },
+      { id: 'd3', title: 'Update onboarding flow', status: 'inprogress', priority: 'medium', dueDate: '2026-06-20', description: 'Redesign the onboarding checklist based on drop-off data. Focus on reducing steps 3 and 4.', subtasks: [] },
+      { id: 'd4', title: 'Competitive analysis — pricing', status: 'inprogress', priority: 'low', dueDate: '2026-06-25', description: 'Survey pricing pages of 5 competitors. Document positioning and packaging differences.', subtasks: [{ id: 's7', text: 'List competitors', done: true }, { id: 's8', text: 'Document pricing tiers', done: false }] },
+      { id: 'd5', title: 'Write release notes for v2.4', status: 'done', priority: 'medium', dueDate: '2026-06-01', description: 'Customer-facing release notes covering new dashboard, export feature, and bug fixes.', subtasks: [] },
+      { id: 'd6', title: 'Sprint retrospective action items', status: 'done', priority: 'low', dueDate: '2026-06-03', description: 'Document and assign follow-up actions from the sprint retro. Share with team by EOD.', subtasks: [{ id: 's9', text: 'Collect retro notes', done: true }, { id: 's10', text: 'Assign owners', done: true }] },
+    ];
+
     /* ── Groq API call ────────────────────────────────── */
     async function fetchGroqPrioritization(tasks) {
       const activeTasks = tasks.filter(t => t.status !== 'done');
@@ -297,9 +240,7 @@
 
       const res = await fetch('https://uqbvpytbqvlubuekgcbz.supabase.co/functions/v1/groq-proxy', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'llama-3.3-70b-versatile',
           messages: [{ role: 'user', content: prompt }],
@@ -316,8 +257,35 @@
       return data.choices?.[0]?.message?.content || 'No response received.';
     }
 
+    /* ── DemoBanner ───────────────────────────────────── */
+    function DemoBanner({ onExitDemo }) {
+      return (
+        <div className="demo-banner w-full px-5 py-2.5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <span className="font-mono text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-400 text-stone-900 uppercase tracking-widest">Demo</span>
+            <p className="font-mono text-xs text-stone-300">
+              Changes are not saved
+              <span className="text-stone-500 mx-2">·</span>
+              <button
+                onClick={onExitDemo}
+                className="text-amber-400 underline underline-offset-2 hover:text-amber-300 transition-colors"
+              >
+                Sign up to save your work
+              </button>
+            </p>
+          </div>
+          <button
+            onClick={onExitDemo}
+            className="font-mono text-xs text-stone-400 border border-stone-600 px-3 py-1 rounded-lg hover:bg-stone-700 hover:text-stone-200 transition-colors shrink-0"
+          >
+            Exit Demo
+          </button>
+        </div>
+      );
+    }
+
     /* ── AuthForm ─────────────────────────────────────── */
-    function AuthForm() {
+    function AuthForm({ onEnterDemo }) {
       const [mode, setMode] = React.useState('login');
       const [email, setEmail] = React.useState('');
       const [password, setPassword] = React.useState('');
@@ -367,6 +335,21 @@
                   {loading ? 'Please wait…' : mode === 'login' ? 'Sign In' : 'Sign Up'}
                 </button>
               </form>
+
+              {/* Divider */}
+              <div className="flex items-center gap-3 my-5">
+                <div className="flex-1 h-px bg-stone-100" />
+                <span className="font-mono text-[10px] text-stone-300 uppercase tracking-widest">or</span>
+                <div className="flex-1 h-px bg-stone-100" />
+              </div>
+
+              {/* Try Demo button */}
+              <button
+                onClick={onEnterDemo}
+                className="w-full font-mono text-sm text-stone-500 border border-stone-200 bg-stone-50 px-6 py-2.5 rounded-xl hover:bg-stone-100 hover:border-stone-300 hover:text-stone-700 active:scale-95 transition-all"
+              >
+                Try Demo
+              </button>
             </div>
             <p className="font-mono text-xs text-stone-400 text-center mt-5">
               {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
@@ -413,35 +396,25 @@
       const [newSubtask, setNewSubtask] = React.useState('');
       const [saving, setSaving] = React.useState(false);
       const [confirmDone, setConfirmDone] = React.useState(false);
-
-      // Validation state
       const [validationError, setValidationError] = React.useState('');
       const [invalidFields, setInvalidFields] = React.useState([]);
 
-      // Track whether all subtasks are done
       const allDone = subtasks.length > 0 && subtasks.every(s => s.done);
 
       React.useEffect(() => {
-        if (allDone && task.status !== 'done') {
-          setConfirmDone(true);
-        } else {
-          setConfirmDone(false);
-        }
+        if (allDone && task.status !== 'done') setConfirmDone(true);
+        else setConfirmDone(false);
       }, [allDone, task.status]);
 
-      // Validate mandatory fields before allowing close
       function validateMandatoryFields() {
         const missing = [];
         const labels = [];
         if (!dueDate) { missing.push('dueDate'); labels.push('Due date'); }
         if (!description.trim()) { missing.push('description'); labels.push('Description'); }
-        // priority always has a value; check it's not empty string just in case
         if (!priority) { missing.push('priority'); labels.push('Priority'); }
-
         if (missing.length > 0) {
           setInvalidFields(missing);
           setValidationError(`Required before closing: ${labels.join(', ')}`);
-          // Clear highlight after animation
           setTimeout(() => setInvalidFields([]), 800);
           return false;
         }
@@ -450,12 +423,8 @@
         return true;
       }
 
-      // X always closes the modal — no deletion, no conditions
-      function handleXClose() {
-        onClose();
-      }
+      function handleXClose() { onClose(); }
 
-      // Save button: validate; show success state but keep modal open
       const [saveSuccess, setSaveSuccess] = React.useState(false);
       function handleSave() {
         if (!validateMandatoryFields()) return;
@@ -463,11 +432,8 @@
         setTimeout(() => setSaveSuccess(false), 1800);
       }
 
-      // Escape key: same as X
       React.useEffect(() => {
-        function onKeyDown(e) {
-          if (e.key === 'Escape') handleXClose();
-        }
+        function onKeyDown(e) { if (e.key === 'Escape') handleXClose(); }
         window.addEventListener('keydown', onKeyDown);
         return () => window.removeEventListener('keydown', onKeyDown);
       }, []);
@@ -488,7 +454,6 @@
         const val = e.target.value;
         setPriority(val);
         await save({ priority: val });
-        // Clear validation if now filled
         setInvalidFields(prev => prev.filter(f => f !== 'priority'));
       }
 
@@ -500,9 +465,7 @@
       }
 
       async function handleDescriptionBlur() {
-        if (description !== task.description) {
-          await save({ description: description || null });
-        }
+        if (description !== task.description) await save({ description: description || null });
         if (description.trim()) setInvalidFields(prev => prev.filter(f => f !== 'description'));
       }
 
@@ -547,8 +510,6 @@
           onClick={e => { if (e.target === e.currentTarget) onClose(); }}
         >
           <div className="modal-panel bg-white rounded-2xl shadow-xl border border-stone-200 w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
-
-            {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
               <div className="flex items-center gap-2">
                 <span className={`font-mono text-[10px] font-medium px-2 py-0.5 rounded-full ${COLUMN_META[task.status].badgeClass}`}>
@@ -561,7 +522,6 @@
                 title="Close">×</button>
             </div>
 
-            {/* Validation error banner */}
             {validationError && (
               <div className="confirm-banner mx-6 mt-4 flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-red-500 shrink-0">
@@ -575,10 +535,7 @@
               </div>
             )}
 
-            {/* Scrollable body */}
             <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
-
-              {/* All-subtasks-done confirm banner */}
               {confirmDone && (
                 <div className="confirm-banner flex items-center justify-between gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
                   <p className="font-mono text-xs text-emerald-700">All subtasks complete — mark task as Done?</p>
@@ -593,20 +550,13 @@
                 </div>
               )}
 
-              {/* Title */}
               <div className="flex flex-col gap-1.5">
                 <label className="font-mono text-[11px] text-stone-400 uppercase tracking-widest">Title</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={e => setTitle(e.target.value)}
-                  onBlur={handleTitleBlur}
+                <input type="text" value={title} onChange={e => setTitle(e.target.value)} onBlur={handleTitleBlur}
                   className="font-display font-700 text-xl text-stone-900 tracking-tight bg-transparent border-b border-stone-200 pb-1 focus:border-blue-400 focus:outline-none transition-colors"
-                  style={{ boxShadow: 'none' }}
-                />
+                  style={{ boxShadow: 'none' }} />
               </div>
 
-              {/* Priority + Due Date row */}
               <div className="flex gap-4 flex-wrap">
                 <div className="flex flex-col gap-1.5 flex-1 min-w-28">
                   <label className="font-mono text-[11px] text-stone-400 uppercase tracking-widest">
@@ -626,57 +576,38 @@
                 </div>
               </div>
 
-              {/* Description — mandatory */}
               <div className="flex flex-col gap-1.5">
                 <label className="font-mono text-[11px] text-stone-400 uppercase tracking-widest">
                   Description <span className="text-red-400">*</span>
                 </label>
-                <textarea
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  onBlur={handleDescriptionBlur}
-                  placeholder="Add a description…"
-                  rows={3}
-                  className={fieldClass("font-mono text-sm bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-stone-700 placeholder-stone-300 resize-none transition-shadow", 'description')}
-                />
+                <textarea value={description} onChange={e => setDescription(e.target.value)} onBlur={handleDescriptionBlur}
+                  placeholder="Add a description…" rows={3}
+                  className={fieldClass("font-mono text-sm bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-stone-700 placeholder-stone-300 resize-none transition-shadow", 'description')} />
               </div>
 
-              {/* Subtasks — optional */}
               <div className="flex flex-col gap-2.5">
                 <div className="flex items-center justify-between">
                   <label className="font-mono text-[11px] text-stone-400 uppercase tracking-widest">
                     Subtasks <span className="text-stone-300 normal-case tracking-normal">(optional)</span>
                   </label>
                   {subtasks.length > 0 && (
-                    <span className="font-mono text-[11px] text-stone-400">
-                      {completedCount}/{subtasks.length}
-                    </span>
+                    <span className="font-mono text-[11px] text-stone-400">{completedCount}/{subtasks.length}</span>
                   )}
                 </div>
 
                 {subtasks.length > 0 && (
                   <div className="h-1 bg-stone-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-emerald-400 rounded-full transition-all duration-300"
-                      style={{ width: `${(completedCount / subtasks.length) * 100}%` }}
-                    />
+                    <div className="h-full bg-emerald-400 rounded-full transition-all duration-300"
+                      style={{ width: `${(completedCount / subtasks.length) * 100}%` }} />
                   </div>
                 )}
 
                 <div className="flex flex-col gap-1.5">
                   {subtasks.map(s => (
                     <div key={s.id} className="flex items-start gap-2.5 group py-1">
-                      <input
-                        type="checkbox"
-                        checked={s.done}
-                        onChange={() => toggleSubtask(s.id)}
-                        className="subtask-check mt-0.5"
-                      />
-                      <span className={`flex-1 font-mono text-sm leading-snug ${s.done ? 'subtask-done-text' : 'text-stone-700'}`}>
-                        {s.text}
-                      </span>
-                      <button
-                        onClick={() => deleteSubtask(s.id)}
+                      <input type="checkbox" checked={s.done} onChange={() => toggleSubtask(s.id)} className="subtask-check mt-0.5" />
+                      <span className={`flex-1 font-mono text-sm leading-snug ${s.done ? 'subtask-done-text' : 'text-stone-700'}`}>{s.text}</span>
+                      <button onClick={() => deleteSubtask(s.id)}
                         className="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-stone-300 hover:text-red-400 hover:bg-red-50 transition-all text-sm leading-none shrink-0"
                         title="Delete subtask">×</button>
                     </div>
@@ -684,23 +615,15 @@
                 </div>
 
                 <form onSubmit={addSubtask} className="flex gap-2 mt-1">
-                  <input
-                    type="text"
-                    value={newSubtask}
-                    onChange={e => setNewSubtask(e.target.value)}
+                  <input type="text" value={newSubtask} onChange={e => setNewSubtask(e.target.value)}
                     placeholder="Add a subtask…"
-                    className="flex-1 font-mono text-sm bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-stone-700 placeholder-stone-300 transition-shadow"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!newSubtask.trim()}
-                    className="font-mono text-xs bg-stone-900 text-white px-4 py-2 rounded-xl hover:bg-stone-700 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                  >Add</button>
+                    className="flex-1 font-mono text-sm bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-stone-700 placeholder-stone-300 transition-shadow" />
+                  <button type="submit" disabled={!newSubtask.trim()}
+                    className="font-mono text-xs bg-stone-900 text-white px-4 py-2 rounded-xl hover:bg-stone-700 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed">Add</button>
                 </form>
               </div>
             </div>
 
-            {/* Footer */}
             <div className="px-6 py-4 border-t border-stone-100 flex items-center justify-between">
               <p className="font-mono text-[10px] text-stone-400">
                 <span className="text-red-400">*</span> required fields
@@ -751,7 +674,6 @@
         if (e.key === 'Escape') setEditing(false);
       }
 
-      // Trash icon SVG
       const TrashIcon = () => (
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
           <path d="M1.5 3h9M4.5 3V2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5v1M5 5.5v3M7 5.5v3M2.5 3l.5 7a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 .5-.5l.5-7" stroke="currentColor" strokeWidth="1.15" strokeLinecap="round" strokeLinejoin="round"/>
@@ -765,42 +687,27 @@
           onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; onDragStart(task.id); }}
           onDragEnd={onDragEnd}
         >
-          {/* Inline delete confirmation */}
           {confirmDelete ? (
             <div className="flex items-center justify-between gap-2 py-0.5">
               <p className="font-mono text-xs text-stone-500">Permanently delete this task?</p>
               <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  onClick={e => { e.stopPropagation(); setConfirmDelete(false); }}
-                  className="font-mono text-[11px] px-2.5 py-1 rounded-lg border border-stone-200 text-stone-500 hover:bg-stone-100 transition-colors">
-                  Cancel
-                </button>
-                <button
-                  onClick={e => { e.stopPropagation(); onDelete(task.id); }}
-                  className="font-mono text-[11px] px-2.5 py-1 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors">
-                  Delete
-                </button>
+                <button onClick={e => { e.stopPropagation(); setConfirmDelete(false); }}
+                  className="font-mono text-[11px] px-2.5 py-1 rounded-lg border border-stone-200 text-stone-500 hover:bg-stone-100 transition-colors">Cancel</button>
+                <button onClick={e => { e.stopPropagation(); onDelete(task.id); }}
+                  className="font-mono text-[11px] px-2.5 py-1 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors">Delete</button>
               </div>
             </div>
           ) : (
             <>
               <div className="flex items-start gap-3">
                 {editing ? (
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={draft}
-                    onChange={e => setDraft(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    onClick={e => e.stopPropagation()}
-                    className="flex-1 font-mono text-sm bg-stone-50 border border-stone-200 rounded-lg px-2 py-0.5 text-stone-700 min-w-0"
-                  />
+                  <input ref={inputRef} type="text" value={draft} onChange={e => setDraft(e.target.value)}
+                    onKeyDown={handleKeyDown} onClick={e => e.stopPropagation()}
+                    className="flex-1 font-mono text-sm bg-stone-50 border border-stone-200 rounded-lg px-2 py-0.5 text-stone-700 min-w-0" />
                 ) : (
-                  <button
-                    onClick={() => onOpenDetail(task)}
+                  <button onClick={() => onOpenDetail(task)}
                     className="flex-1 font-mono text-sm text-stone-700 leading-snug pt-0.5 break-words min-w-0 text-left hover:text-stone-900 transition-colors"
-                    title="Open task detail"
-                  >
+                    title="Open task detail">
                     {task.title}
                   </button>
                 )}
@@ -823,9 +730,7 @@
                         className="w-7 h-7 flex items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-600 disabled:opacity-20 disabled:cursor-not-allowed transition-colors">←</button>
                       <button onClick={e => { e.stopPropagation(); onMove(task.id, 'right'); }} disabled={idx === STATUSES.length - 1} title="Move right"
                         className="w-7 h-7 flex items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-600 disabled:opacity-20 disabled:cursor-not-allowed transition-colors">→</button>
-                      <button
-                        onClick={e => { e.stopPropagation(); setConfirmDelete(true); }}
-                        title="Delete task"
+                      <button onClick={e => { e.stopPropagation(); setConfirmDelete(true); }} title="Delete task"
                         className="w-7 h-7 flex items-center justify-center rounded-lg text-stone-300 hover:bg-red-50 hover:text-red-400 transition-colors ml-0.5">
                         <TrashIcon />
                       </button>
@@ -834,7 +739,6 @@
                 </div>
               </div>
 
-              {/* Meta row */}
               <div className="flex items-center gap-3 mt-1.5">
                 {formattedDate && (
                   <div className={`flex items-center gap-1 font-mono text-[11px] ${overdue ? 'text-red-500' : 'text-stone-400'}`}>
@@ -872,63 +776,28 @@
       const [isDragOver, setIsDragOver] = React.useState(false);
       const dragCounter = React.useRef(0);
 
-      function handleDragEnter(e) {
-        e.preventDefault();
-        dragCounter.current += 1;
-        setIsDragOver(true);
-      }
-
-      function handleDragOver(e) {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-      }
-
-      function handleDragLeave(e) {
-        dragCounter.current -= 1;
-        if (dragCounter.current === 0) {
-          setIsDragOver(false);
-        }
-      }
-
-      function handleDrop(e) {
-        e.preventDefault();
-        dragCounter.current = 0;
-        setIsDragOver(false);
-        onDrop(status);
-      }
+      function handleDragEnter(e) { e.preventDefault(); dragCounter.current += 1; setIsDragOver(true); }
+      function handleDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+      function handleDragLeave(e) { dragCounter.current -= 1; if (dragCounter.current === 0) setIsDragOver(false); }
+      function handleDrop(e) { e.preventDefault(); dragCounter.current = 0; setIsDragOver(false); onDrop(status); }
 
       return (
         <div
           className={`column-drop-target flex flex-col bg-stone-50 rounded-2xl shadow-sm border border-stone-200 ${colClass} ${isDragOver ? 'drag-over' : ''}`}
-          onDragEnter={handleDragEnter}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
+          onDragEnter={handleDragEnter} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}
         >
           <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100 rounded-t-2xl overflow-hidden">
             <h2 className="font-display font-700 text-stone-800 text-base tracking-tight">{label}</h2>
-            <span className={`font-mono text-xs font-medium px-2.5 py-0.5 rounded-full ${badgeClass}`}>
-              {tasks.length}
-            </span>
+            <span className={`font-mono text-xs font-medium px-2.5 py-0.5 rounded-full ${badgeClass}`}>{tasks.length}</span>
           </div>
           <div className="flex flex-col gap-2.5 p-4 flex-1 min-h-32">
             {tasks.length === 0 && (
-              <p className="text-xs font-mono text-stone-300 text-center mt-6">
-                {isDragOver ? 'Drop here' : 'empty'}
-              </p>
+              <p className="text-xs font-mono text-stone-300 text-center mt-6">{isDragOver ? 'Drop here' : 'empty'}</p>
             )}
             {tasks.map(task => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                onMove={onMove}
-                onDelete={onDelete}
-                onEdit={onEdit}
-                onOpenDetail={onOpenDetail}
-                onDragStart={onDragStart}
-                onDragEnd={onDragEnd}
-                isDragging={draggingId === task.id}
-              />
+              <TaskCard key={task.id} task={task} onMove={onMove} onDelete={onDelete} onEdit={onEdit}
+                onOpenDetail={onOpenDetail} onDragStart={onDragStart} onDragEnd={onDragEnd}
+                isDragging={draggingId === task.id} />
             ))}
           </div>
         </div>
@@ -949,9 +818,9 @@
     }
 
     /* ── TaskBoard ────────────────────────────────────── */
-    function TaskBoard({ user }) {
-      const [tasks, setTasks] = React.useState([]);
-      const [loading, setLoading] = React.useState(true);
+    function TaskBoard({ user, isDemo = false, onExitDemo }) {
+      const [tasks, setTasks] = React.useState(isDemo ? DEMO_TASKS : []);
+      const [loading, setLoading] = React.useState(!isDemo);
       const [input, setInput] = React.useState('');
       const [error, setError] = React.useState('');
       const [aiLoading, setAiLoading] = React.useState(false);
@@ -960,7 +829,6 @@
       const [overdueFilter, setOverdueFilter] = React.useState(false);
       const [draggingId, setDraggingId] = React.useState(null);
       const draggingIdRef = React.useRef(null);
-
       const errorTimerRef = React.useRef(null);
 
       function showError(msg) {
@@ -975,21 +843,15 @@
       }
 
       React.useEffect(() => {
+        if (isDemo) return; // skip DB fetch in demo mode
         async function fetchTasks() {
-          const { data, error } = await sb
-            .from('tasks')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-          if (error) {
-            showError('Failed to load tasks: ' + error.message);
-          } else {
-            setTasks(data.map(rowToTask));
-          }
+          const { data, error } = await sb.from('tasks').select('*').order('created_at', { ascending: false });
+          if (error) showError('Failed to load tasks: ' + error.message);
+          else setTasks(data.map(rowToTask));
           setLoading(false);
         }
         fetchTasks();
-      }, []);
+      }, [isDemo]);
 
       async function handleAIPrioritize() {
         if (aiLoading) return;
@@ -1005,17 +867,31 @@
         }
       }
 
-      // Change 1: Add form only has title; immediately opens modal after creating task
       async function addTask(e) {
         e.preventDefault();
         const title = input.trim();
         if (!title) { showError('Title cannot be empty.'); return; }
 
+        if (isDemo) {
+          // Demo: state-only
+          const created = {
+            id: uid(),
+            title,
+            status: 'todo',
+            priority: 'low',
+            dueDate: '',
+            description: '',
+            subtasks: [],
+          };
+          setTasks(prev => [created, ...prev]);
+          setInput('');
+          setDetailTask(created);
+          return;
+        }
+
         const newRow = { title, status: 'todo', priority: 'low', due_date: null };
         const { data, error } = await sb.from('tasks').insert(newRow).select().single();
-
         if (error) { showError('Failed to add task: ' + error.message); return; }
-
         const created = rowToTask(data);
         setTasks(prev => [created, ...prev]);
         setInput('');
@@ -1025,16 +901,13 @@
       async function moveTask(id, direction) {
         const task = tasks.find(t => t.id === id);
         if (!task) return;
-
         const idx = STATUSES.indexOf(task.status);
         const nextIdx = direction === 'left' ? idx - 1 : idx + 1;
         if (nextIdx < 0 || nextIdx >= STATUSES.length) return;
-
         const nextStatus = STATUSES[nextIdx];
         setTasks(prev => prev.map(t => t.id === id ? { ...t, status: nextStatus } : t));
-
+        if (isDemo) return;
         const { error } = await sb.from('tasks').update({ status: nextStatus }).eq('id', id);
-
         if (error) {
           setTasks(prev => prev.map(t => t.id === id ? { ...t, status: task.status } : t));
           showError('Failed to move task: ' + error.message);
@@ -1044,11 +917,9 @@
       async function moveTaskToStatus(id, status) {
         const task = tasks.find(t => t.id === id);
         if (!task) return;
-
         setTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t));
-
+        if (isDemo) return;
         const { error } = await sb.from('tasks').update({ status }).eq('id', id);
-
         if (error) {
           setTasks(prev => prev.map(t => t.id === id ? { ...t, status: task.status } : t));
           showError('Failed to update task status: ' + error.message);
@@ -1058,14 +929,10 @@
       async function dragDropTask(id, targetStatus) {
         const task = tasks.find(t => t.id === id);
         if (!task || task.status === targetStatus) return;
-
-        // Optimistic update
         setTasks(prev => prev.map(t => t.id === id ? { ...t, status: targetStatus } : t));
-
+        if (isDemo) return;
         const { error } = await sb.from('tasks').update({ status: targetStatus }).eq('id', id);
-
         if (error) {
-          // Roll back
           setTasks(prev => prev.map(t => t.id === id ? { ...t, status: task.status } : t));
           showError('Failed to move task: ' + error.message);
         }
@@ -1074,9 +941,8 @@
       async function deleteTask(id) {
         const snapshot = tasks;
         setTasks(prev => prev.filter(t => t.id !== id));
-
+        if (isDemo) return;
         const { error } = await sb.from('tasks').delete().eq('id', id);
-
         if (error) {
           setTasks(snapshot);
           showError('Failed to delete task: ' + error.message);
@@ -1086,14 +952,11 @@
       async function editTask(id, newTitle) {
         const title = newTitle.trim();
         if (!title) { showError('Title cannot be empty.'); return; }
-
         const task = tasks.find(t => t.id === id);
         if (!task) return;
-
         setTasks(prev => prev.map(t => t.id === id ? { ...t, title } : t));
-
+        if (isDemo) return;
         const { error } = await sb.from('tasks').update({ title }).eq('id', id);
-
         if (error) {
           setTasks(prev => prev.map(t => t.id === id ? { ...t, title: task.title } : t));
           showError('Failed to update task: ' + error.message);
@@ -1123,186 +986,193 @@
           return updated;
         });
 
+        if (isDemo) return;
         const { error } = await sb.from('tasks').update(patch).eq('id', id);
-
-        if (error) {
-          showError('Failed to save: ' + error.message);
-        }
+        if (error) showError('Failed to save: ' + error.message);
       }
 
       async function handleLogout() {
         await sb.auth.signOut();
       }
 
-      // Change 3: overdue filter logic
-      const overdueCount = tasks.filter(t =>
-        t.status !== 'done' && isOverdue(t.dueDate)
-      ).length;
+      const overdueCount = tasks.filter(t => t.status !== 'done' && isOverdue(t.dueDate)).length;
 
       function getColumnTasks(status) {
         if (!overdueFilter) return tasks.filter(t => t.status === status);
-        // Overdue filter: only todo/inprogress with past due date
-        if (status === 'done') return []; // done column hidden via render logic
-        return tasks.filter(t =>
-          t.status === status && isOverdue(t.dueDate)
-        );
+        if (status === 'done') return [];
+        return tasks.filter(t => t.status === status && isOverdue(t.dueDate));
       }
 
       const activeCount = tasks.filter(t => t.status !== 'done').length;
       const visibleStatuses = overdueFilter ? ['todo', 'inprogress'] : STATUSES;
 
       return (
-        <div className="min-h-screen px-6 py-10 max-w-6xl mx-auto">
-          <ErrorBanner message={error} onClose={dismissError} />
+        <div className="min-h-screen flex flex-col">
+          {/* Demo banner — non-dismissable, pinned to top */}
+          {isDemo && <DemoBanner onExitDemo={onExitDemo} />}
 
-          {/* Header */}
-          <div className="mb-8 flex items-start justify-between gap-4">
-            <div>
-              <h1 className="font-display text-3xl font-800 text-stone-900 tracking-tight mb-1">Task Board</h1>
-              <p className="font-mono text-xs text-stone-400">
-                {loading ? 'Loading…' : `${tasks.length} task${tasks.length !== 1 ? 's' : ''} total`}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 pt-1 shrink-0 flex-wrap justify-end">
+          <div className="px-6 py-10 max-w-6xl mx-auto w-full flex-1">
+            <ErrorBanner message={error} onClose={dismissError} />
 
-              {/* Change 3: Overdue filter button */}
-              <button
-                onClick={() => setOverdueFilter(f => !f)}
-                disabled={loading}
-                title={overdueFilter ? 'Clear overdue filter' : 'Show overdue tasks only'}
-                className={`flex items-center gap-2 font-mono text-xs px-3 py-1.5 rounded-lg border transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed
-                  ${overdueFilter
-                    ? 'bg-red-600 text-white border-red-700 hover:bg-red-700 overdue-active'
-                    : overdueCount > 0
-                      ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:border-red-300'
-                      : 'bg-white text-stone-500 border-stone-200 hover:bg-stone-100'
-                  }`}
-              >
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.3"/>
-                  <line x1="6" y1="3.5" x2="6" y2="6.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                  <circle cx="6" cy="8.2" r="0.7" fill="currentColor"/>
-                </svg>
-                Overdue
-                {overdueCount > 0 && (
-                  <span className={`font-mono text-[10px] font-medium px-1.5 py-0.5 rounded-full min-w-[18px] text-center
-                    ${overdueFilter ? 'bg-white text-red-600' : 'bg-red-500 text-white'}`}>
-                    {overdueCount}
-                  </span>
-                )}
-              </button>
-
-              <button onClick={handleAIPrioritize} disabled={aiLoading || loading || activeCount === 0}
-                title={activeCount === 0 ? 'No active tasks to analyze' : 'Analyze tasks with AI'}
-                className="flex items-center gap-2 font-mono text-xs border border-amber-300 bg-amber-50 text-amber-800 px-3 py-1.5 rounded-lg hover:bg-amber-100 hover:border-amber-400 transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed">
-                {aiLoading ? (
-                  <><span className="spinner" style={{borderColor:'rgba(180,83,9,0.3)', borderTopColor:'#b45309'}}></span>Analyzing…</>
-                ) : (
-                  <>
-                    <svg width="12" height="12" viewBox="0 0 14 14" fill="none" className="text-amber-500">
-                      <path d="M7 1L8.5 5.5L13 7L8.5 8.5L7 13L5.5 8.5L1 7L5.5 5.5L7 1Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" fill="currentColor" fillOpacity="0.2"/>
-                    </svg>
-                    AI Prioritize
-                  </>
-                )}
-              </button>
-              <span className="font-mono text-xs text-stone-400 hidden sm:block truncate max-w-[180px]">{user.email}</span>
-              <button onClick={handleLogout}
-                className="font-mono text-xs text-stone-500 border border-stone-200 bg-white px-3 py-1.5 rounded-lg hover:bg-stone-100 hover:text-stone-800 transition-colors shadow-sm">
-                Sign out
-              </button>
-            </div>
-          </div>
-
-          {/* Overdue filter active indicator */}
-          {overdueFilter && (
-            <div className="confirm-banner mb-6 flex items-center justify-between gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-              <div className="flex items-center gap-2">
-                <svg width="13" height="13" viewBox="0 0 12 12" fill="none" className="text-red-500 shrink-0">
-                  <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.3"/>
-                  <line x1="6" y1="3.5" x2="6" y2="6.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                  <circle cx="6" cy="8.2" r="0.7" fill="currentColor"/>
-                </svg>
-                <p className="font-mono text-xs text-red-700">
-                  Showing {overdueCount} overdue task{overdueCount !== 1 ? 's' : ''} — Done column hidden
+            {/* Header */}
+            <div className="mb-8 flex items-start justify-between gap-4">
+              <div>
+                <h1 className="font-display text-3xl font-800 text-stone-900 tracking-tight mb-1">Task Board</h1>
+                <p className="font-mono text-xs text-stone-400">
+                  {loading ? 'Loading…' : `${tasks.length} task${tasks.length !== 1 ? 's' : ''} total`}
                 </p>
               </div>
-              <button onClick={() => setOverdueFilter(false)}
-                className="font-mono text-xs text-red-500 hover:text-red-700 underline underline-offset-2 transition-colors shrink-0">
-                Clear filter
-              </button>
+              <div className="flex items-center gap-2 pt-1 shrink-0 flex-wrap justify-end">
+
+                {/* Overdue filter button */}
+                <button
+                  onClick={() => setOverdueFilter(f => !f)}
+                  disabled={loading}
+                  title={overdueFilter ? 'Clear overdue filter' : 'Show overdue tasks only'}
+                  className={`flex items-center gap-2 font-mono text-xs px-3 py-1.5 rounded-lg border transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed
+                    ${overdueFilter
+                      ? 'bg-red-600 text-white border-red-700 hover:bg-red-700 overdue-active'
+                      : overdueCount > 0
+                        ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:border-red-300'
+                        : 'bg-white text-stone-500 border-stone-200 hover:bg-stone-100'
+                    }`}
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.3"/>
+                    <line x1="6" y1="3.5" x2="6" y2="6.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                    <circle cx="6" cy="8.2" r="0.7" fill="currentColor"/>
+                  </svg>
+                  Overdue
+                  {overdueCount > 0 && (
+                    <span className={`font-mono text-[10px] font-medium px-1.5 py-0.5 rounded-full min-w-[18px] text-center
+                      ${overdueFilter ? 'bg-white text-red-600' : 'bg-red-500 text-white'}`}>
+                      {overdueCount}
+                    </span>
+                  )}
+                </button>
+
+                <button onClick={handleAIPrioritize} disabled={aiLoading || loading || activeCount === 0}
+                  title={activeCount === 0 ? 'No active tasks to analyze' : 'Analyze tasks with AI'}
+                  className="flex items-center gap-2 font-mono text-xs border border-amber-300 bg-amber-50 text-amber-800 px-3 py-1.5 rounded-lg hover:bg-amber-100 hover:border-amber-400 transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed">
+                  {aiLoading ? (
+                    <><span className="spinner" style={{borderColor:'rgba(180,83,9,0.3)', borderTopColor:'#b45309'}}></span>Analyzing…</>
+                  ) : (
+                    <>
+                      <svg width="12" height="12" viewBox="0 0 14 14" fill="none" className="text-amber-500">
+                        <path d="M7 1L8.5 5.5L13 7L8.5 8.5L7 13L5.5 8.5L1 7L5.5 5.5L7 1Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" fill="currentColor" fillOpacity="0.2"/>
+                      </svg>
+                      AI Prioritize
+                    </>
+                  )}
+                </button>
+
+                {/* Email shown for real users only */}
+                {!isDemo && (
+                  <span className="font-mono text-xs text-stone-400 hidden sm:block truncate max-w-[180px]">{user.email}</span>
+                )}
+
+                {/* Sign Out (real users) vs Exit Demo */}
+                {isDemo ? (
+                  <button onClick={onExitDemo}
+                    className="font-mono text-xs text-stone-500 border border-stone-200 bg-white px-3 py-1.5 rounded-lg hover:bg-stone-100 hover:text-stone-800 transition-colors shadow-sm">
+                    Exit Demo
+                  </button>
+                ) : (
+                  <button onClick={handleLogout}
+                    className="font-mono text-xs text-stone-500 border border-stone-200 bg-white px-3 py-1.5 rounded-lg hover:bg-stone-100 hover:text-stone-800 transition-colors shadow-sm">
+                    Sign out
+                  </button>
+                )}
+              </div>
             </div>
-          )}
 
-          {/* AI Panel */}
-          {aiResponse !== null && (
-            <AIPriorityPanel response={aiResponse} onClose={() => setAiResponse(null)} />
-          )}
-
-          {/* Change 1: Add Task Form — title only */}
-          <form onSubmit={addTask} className="flex gap-3 mb-10 flex-wrap">
-            <input type="text" value={input} onChange={e => setInput(e.target.value)} placeholder="New task title…"
-              className="flex-1 font-mono text-sm bg-white border border-stone-200 rounded-xl px-4 py-3 text-stone-800 placeholder-stone-300 shadow-sm transition-shadow min-w-40" />
-            <button type="submit"
-              className="font-display font-600 text-sm bg-stone-900 text-white px-6 py-3 rounded-xl hover:bg-stone-700 active:scale-95 transition-all shadow-sm">
-              Add
-            </button>
-          </form>
-
-          {/* Columns — Change 3: done hidden when overdueFilter active */}
-          {loading ? (
-            <div className={`grid grid-cols-1 gap-5 ${overdueFilter ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
-              {visibleStatuses.map(s => (
-                <div key={s} className={`flex flex-col bg-stone-50 rounded-2xl shadow-sm border border-stone-200 ${COLUMN_META[s].colClass} overflow-hidden`}>
-                  <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
-                    <h2 className="font-display font-700 text-stone-800 text-base tracking-tight">{COLUMN_META[s].label}</h2>
-                  </div>
-                  <div className="p-4">
-                    <div className="h-16 bg-stone-100 rounded-xl animate-pulse" />
-                  </div>
+            {/* Overdue filter active indicator */}
+            {overdueFilter && (
+              <div className="confirm-banner mb-6 flex items-center justify-between gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <svg width="13" height="13" viewBox="0 0 12 12" fill="none" className="text-red-500 shrink-0">
+                    <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.3"/>
+                    <line x1="6" y1="3.5" x2="6" y2="6.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                    <circle cx="6" cy="8.2" r="0.7" fill="currentColor"/>
+                  </svg>
+                  <p className="font-mono text-xs text-red-700">
+                    Showing {overdueCount} overdue task{overdueCount !== 1 ? 's' : ''} — Done column hidden
+                  </p>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className={`grid grid-cols-1 gap-5 ${overdueFilter ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
-              {visibleStatuses.map(status => (
-                <Column
-                  key={status}
-                  status={status}
-                  tasks={getColumnTasks(status)}
-                  onMove={moveTask}
-                  onDelete={deleteTask}
-                  onEdit={editTask}
-                  onOpenDetail={t => setDetailTask(t)}
-                  onDragStart={id => { setDraggingId(id); draggingIdRef.current = id; }}
-                  onDragEnd={() => {
-                    setDraggingId(null);
-                    draggingIdRef.current = null;
-                  }}
-                  onDrop={targetStatus => {
-                    const id = draggingIdRef.current;
-                    if (id) {
-                      dragDropTask(id, targetStatus);
-                      setDraggingId(null);
-                      draggingIdRef.current = null;
-                    }
-                  }}
-                  draggingId={draggingId}
-                />
-              ))}
-            </div>
-          )}
+                <button onClick={() => setOverdueFilter(false)}
+                  className="font-mono text-xs text-red-500 hover:text-red-700 underline underline-offset-2 transition-colors shrink-0">
+                  Clear filter
+                </button>
+              </div>
+            )}
 
-          {/* Detail Modal */}
-          {detailTask && (
-            <TaskDetailModal
-              task={detailTask}
-              onClose={() => setDetailTask(null)}
-              onSave={patchTask}
-              onMoveStatus={moveTaskToStatus}
-              showError={showError}
-            />
-          )}
+            {/* AI Panel */}
+            {aiResponse !== null && (
+              <AIPriorityPanel response={aiResponse} onClose={() => setAiResponse(null)} />
+            )}
+
+            {/* Add Task Form */}
+            <form onSubmit={addTask} className="flex gap-3 mb-10 flex-wrap">
+              <input type="text" value={input} onChange={e => setInput(e.target.value)} placeholder="New task title…"
+                className="flex-1 font-mono text-sm bg-white border border-stone-200 rounded-xl px-4 py-3 text-stone-800 placeholder-stone-300 shadow-sm transition-shadow min-w-40" />
+              <button type="submit"
+                className="font-display font-600 text-sm bg-stone-900 text-white px-6 py-3 rounded-xl hover:bg-stone-700 active:scale-95 transition-all shadow-sm">
+                Add
+              </button>
+            </form>
+
+            {/* Columns */}
+            {loading ? (
+              <div className={`grid grid-cols-1 gap-5 ${overdueFilter ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+                {visibleStatuses.map(s => (
+                  <div key={s} className={`flex flex-col bg-stone-50 rounded-2xl shadow-sm border border-stone-200 ${COLUMN_META[s].colClass} overflow-hidden`}>
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
+                      <h2 className="font-display font-700 text-stone-800 text-base tracking-tight">{COLUMN_META[s].label}</h2>
+                    </div>
+                    <div className="p-4">
+                      <div className="h-16 bg-stone-100 rounded-xl animate-pulse" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className={`grid grid-cols-1 gap-5 ${overdueFilter ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+                {visibleStatuses.map(status => (
+                  <Column
+                    key={status}
+                    status={status}
+                    tasks={getColumnTasks(status)}
+                    onMove={moveTask}
+                    onDelete={deleteTask}
+                    onEdit={editTask}
+                    onOpenDetail={t => setDetailTask(t)}
+                    onDragStart={id => { setDraggingId(id); draggingIdRef.current = id; }}
+                    onDragEnd={() => { setDraggingId(null); draggingIdRef.current = null; }}
+                    onDrop={targetStatus => {
+                      const id = draggingIdRef.current;
+                      if (id) {
+                        dragDropTask(id, targetStatus);
+                        setDraggingId(null);
+                        draggingIdRef.current = null;
+                      }
+                    }}
+                    draggingId={draggingId}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Detail Modal */}
+            {detailTask && (
+              <TaskDetailModal
+                task={detailTask}
+                onClose={() => setDetailTask(null)}
+                onSave={patchTask}
+                onMoveStatus={moveTaskToStatus}
+                showError={showError}
+              />
+            )}
+          </div>
         </div>
       );
     }
@@ -1310,6 +1180,7 @@
     /* ── App (auth gate) ──────────────────────────────── */
     function App() {
       const [user, setUser] = React.useState(null);
+      const [isDemo, setIsDemo] = React.useState(false);
 
       React.useEffect(() => {
         sb.auth.getSession().then(({ data: { session } }) => {
@@ -1318,12 +1189,23 @@
 
         const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
           setUser(session?.user ?? false);
+          // If user signs out, exit demo mode too
+          if (!session) setIsDemo(false);
         });
 
         return () => subscription.unsubscribe();
       }, []);
 
-      if (user === null) {
+      function handleEnterDemo() {
+        setIsDemo(true);
+      }
+
+      function handleExitDemo() {
+        setIsDemo(false);
+      }
+
+      // Loading state
+      if (user === null && !isDemo) {
         return (
           <div className="min-h-screen flex items-center justify-center">
             <p className="font-mono text-xs text-stone-400">Loading…</p>
@@ -1331,8 +1213,24 @@
         );
       }
 
-      if (user === false) return <AuthForm />;
-      return <TaskBoard user={user} />;
+      // Demo mode (bypasses auth entirely)
+      if (isDemo) {
+        return (
+          <TaskBoard
+            user={{ email: 'demo@preview' }}
+            isDemo={true}
+            onExitDemo={handleExitDemo}
+          />
+        );
+      }
+
+      // Not authed → show auth form
+      if (user === false) {
+        return <AuthForm onEnterDemo={handleEnterDemo} />;
+      }
+
+      // Authed → normal board
+      return <TaskBoard user={user} isDemo={false} />;
     }
 
     ReactDOM.createRoot(document.getElementById('root')).render(<App />);
