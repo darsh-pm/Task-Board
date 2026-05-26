@@ -238,8 +238,6 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxYnZweXRicXZsdWJ1ZWtnY2J6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NDgwMzcsImV4cCI6MjA5MTAyNDAzN30._SvaS0J-geH725suru-0Gd0S53QuJ1Rd2Sevtg5Bg1E'
     );
 
-    const GROQ_KEY = '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';
-
     /* ── DB row → app task ───────────────────────────── */
     function rowToTask(row) {
       return {
@@ -297,10 +295,9 @@
 
       const prompt = `You are a productivity assistant. Here are my current active tasks:\n\n${taskList}\n\nAnalyze these tasks and tell me which ones I should focus on first and why. Consider urgency (due dates), priority labels, and current status. Be concise and actionable — a ranked recommendation with brief reasoning for each.`;
 
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      const res = await fetch('https://uqbvpytbqvlubuekgcbz.supabase.co/functions/v1/groq-proxy', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${GROQ_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
