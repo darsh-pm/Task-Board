@@ -216,16 +216,6 @@
       return Math.random().toString(36).slice(2, 10);
     }
 
-    /* ── Demo data ────────────────────────────────────── */
-    const DEMO_TASKS = [
-      { id: 'd1', title: 'Define Q3 product roadmap', status: 'todo', priority: 'high', dueDate: '2026-06-15', description: 'Align with stakeholders on key themes and initiatives for Q3. Include engineering capacity estimates.', subtasks: [{ id: 's1', text: 'Draft initial themes', done: true }, { id: 's2', text: 'Review with engineering lead', done: false }, { id: 's3', text: 'Present to leadership', done: false }] },
-      { id: 'd2', title: 'User interview synthesis', status: 'todo', priority: 'high', dueDate: '2026-06-10', description: 'Synthesize findings from 8 user interviews conducted last week. Identify top 3 pain points.', subtasks: [{ id: 's4', text: 'Transcribe notes', done: true }, { id: 's5', text: 'Tag themes', done: true }, { id: 's6', text: 'Write synthesis doc', done: false }] },
-      { id: 'd3', title: 'Update onboarding flow', status: 'inprogress', priority: 'medium', dueDate: '2026-06-20', description: 'Redesign the onboarding checklist based on drop-off data. Focus on reducing steps 3 and 4.', subtasks: [] },
-      { id: 'd4', title: 'Competitive analysis — pricing', status: 'inprogress', priority: 'low', dueDate: '2026-06-25', description: 'Survey pricing pages of 5 competitors. Document positioning and packaging differences.', subtasks: [{ id: 's7', text: 'List competitors', done: true }, { id: 's8', text: 'Document pricing tiers', done: false }] },
-      { id: 'd5', title: 'Write release notes for v2.4', status: 'done', priority: 'medium', dueDate: '2026-06-01', description: 'Customer-facing release notes covering new dashboard, export feature, and bug fixes.', subtasks: [] },
-      { id: 'd6', title: 'Sprint retrospective action items', status: 'done', priority: 'low', dueDate: '2026-06-03', description: 'Document and assign follow-up actions from the sprint retro. Share with team by EOD.', subtasks: [{ id: 's9', text: 'Collect retro notes', done: true }, { id: 's10', text: 'Assign owners', done: true }] },
-    ];
-
     /* ── Groq API call ────────────────────────────────── */
     async function fetchGroqPrioritization(tasks) {
       const activeTasks = tasks.filter(t => t.status !== 'done');
