@@ -334,7 +334,7 @@
 
     /* ── Groq API calls ───────────────────────────────── */
     const GROQ_PROXY_URL = 'https://uqbvpytbqvlubuekgcbz.supabase.co/functions/v1/groq-proxy';
-    const GROQ_MODEL = 'llama-3.3-70b-versatile';
+    const GROQ_MODEL = 'openai/gpt-oss-120b';
 
     async function groqChat(prompt, maxTokens) {
       const res = await fetch(GROQ_PROXY_URL, {
